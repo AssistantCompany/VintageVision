@@ -1,0 +1,35 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Navigate to project directory
+            cd /home/dev/scaledminds_07/projects/vintagevision
+            
+            # Pull latest changes
+            git pull origin main
+            
+            # Create/Update .env file from secret
+            echo "${{ secrets.ENV_FILE }}" > .env
+            
+            # Build and Start Services
+            sudo docker compose up -d --build --remove-orphans
+            
+            # Prune unused images to save space
+            sudo docker image prune -f

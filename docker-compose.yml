@@ -1,0 +1,188 @@
+# VintageVision - Self-Hosted Docker Deployment
+# Follows ScaledMinds_07 deployment standards
+# Domain: vintagevision.space
+
+networks:
+  scaledminds_network:
+    external: true
+  internal:
+    driver: bridge
+    internal: true
+
+volumes:
+  db_data:
+  redis_data:
+  minio_data:
+
+services:
+  # Frontend - React App (Vite build served by Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: vintagevision_frontend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vintagevision.rule=Host(`vintagevision.space`)"
+      - "traefik.http.routers.vintagevision.entrypoints=websecure"
+      - "traefik.http.routers.vintagevision.tls.certresolver=letsencrypt"
+      - "traefik.http.services.vintagevision.loadbalancer.server.port=80"
+      # Security headers middleware
+      - "traefik.http.middlewares.vintagevision-headers.headers.customresponseheaders.X-Frame-Options=SAMEORIGIN"
+      - "traefik.http.middlewares.vintagevision-headers.headers.customresponseheaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.vintagevision-headers.headers.customresponseheaders.X-XSS-Protection=1; mode=block"
+      - "traefik.http.middlewares.vintagevision-headers.headers.customresponseheaders.Referrer-Policy=strict-origin-when-cross-origin"
+      # Apply middlewares
+      - "traefik.http.routers.vintagevision.middlewares=vintagevision-headers,rate-limit"
+    networks:
+      - scaledminds_network
+      - internal
+    depends_on:
+      - api
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Backend API - Node.js + Hono
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: vintagevision_api
+    ports:
+      - "3001:3000"  # Expose API to localhost:3001 for development (3000 is used by Grafana)
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=postgresql://vintagevision:${DB_PASSWORD}@db:5432/vintagevision
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET_NAME=vintagevision
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=https://vintagevision.space/api/auth/google/callback
+      - FRONTEND_URL=https://vintagevision.space
+      - API_URL=http://vintagevision_api:3000
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      minio:
+        condition: service_started
+    networks:
+      - scaledminds_network
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    security_opt:
+      - no-new-privileges:true
+
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: vintagevision_db
+    environment:
+      - POSTGRES_DB=vintagevision
+      - POSTGRES_USER=vintagevision
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF8 --locale=C
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vintagevision"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+
+  # Redis - Sessions and Caching
+  redis:
+    image: redis:7-alpine
+    container_name: vintagevision_redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+    security_opt:
+      - no-new-privileges:true
+
+  # MinIO - S3-Compatible Object Storage for Images
+  minio:
+    image: minio/minio:latest
+    container_name: vintagevision_minio
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    networks:
+      - internal
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true

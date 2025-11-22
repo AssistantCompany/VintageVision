@@ -1,0 +1,66 @@
+import { z } from 'zod';
+declare const envSchema: z.ZodObject<{
+    NODE_ENV: z.ZodDefault<z.ZodEnum<["development", "production", "test"]>>;
+    PORT: z.ZodDefault<z.ZodString>;
+    DATABASE_URL: z.ZodString;
+    REDIS_URL: z.ZodString;
+    MINIO_ENDPOINT: z.ZodString;
+    MINIO_ACCESS_KEY: z.ZodString;
+    MINIO_SECRET_KEY: z.ZodString;
+    MINIO_BUCKET_NAME: z.ZodDefault<z.ZodString>;
+    OPENAI_API_KEY: z.ZodString;
+    SESSION_SECRET: z.ZodString;
+    GOOGLE_CLIENT_ID: z.ZodString;
+    GOOGLE_CLIENT_SECRET: z.ZodString;
+    FRONTEND_URL: z.ZodString;
+    API_URL: z.ZodDefault<z.ZodString>;
+}, "strip", z.ZodTypeAny, {
+    NODE_ENV: "development" | "production" | "test";
+    PORT: string;
+    DATABASE_URL: string;
+    REDIS_URL: string;
+    MINIO_ENDPOINT: string;
+    MINIO_ACCESS_KEY: string;
+    MINIO_SECRET_KEY: string;
+    MINIO_BUCKET_NAME: string;
+    OPENAI_API_KEY: string;
+    SESSION_SECRET: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
+    FRONTEND_URL: string;
+    API_URL: string;
+}, {
+    DATABASE_URL: string;
+    REDIS_URL: string;
+    MINIO_ENDPOINT: string;
+    MINIO_ACCESS_KEY: string;
+    MINIO_SECRET_KEY: string;
+    OPENAI_API_KEY: string;
+    SESSION_SECRET: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
+    FRONTEND_URL: string;
+    NODE_ENV?: "development" | "production" | "test" | undefined;
+    PORT?: string | undefined;
+    MINIO_BUCKET_NAME?: string | undefined;
+    API_URL?: string | undefined;
+}>;
+export type Env = z.infer<typeof envSchema>;
+export declare const env: {
+    NODE_ENV: "development" | "production" | "test";
+    PORT: string;
+    DATABASE_URL: string;
+    REDIS_URL: string;
+    MINIO_ENDPOINT: string;
+    MINIO_ACCESS_KEY: string;
+    MINIO_SECRET_KEY: string;
+    MINIO_BUCKET_NAME: string;
+    OPENAI_API_KEY: string;
+    SESSION_SECRET: string;
+    GOOGLE_CLIENT_ID: string;
+    GOOGLE_CLIENT_SECRET: string;
+    FRONTEND_URL: string;
+    API_URL: string;
+};
+export {};
+//# sourceMappingURL=env.d.ts.map

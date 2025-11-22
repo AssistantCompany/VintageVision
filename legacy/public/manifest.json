@@ -1,0 +1,118 @@
+{
+  "name": "VintageVision - AI Antique Expert",
+  "short_name": "VintageVision",
+  "description": "Transform your phone into a world-class antique expert with AI-powered identification and styling suggestions",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fef3e2",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait-primary",
+  "categories": ["lifestyle", "shopping", "education"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "id": "com.vintagevision.app",
+  "screenshots": [
+    {
+      "src": "https://mocha-cdn.com/og.png",
+      "type": "image/png",
+      "sizes": "1280x720",
+      "form_factor": "wide",
+      "label": "VintageVision AI Analysis"
+    },
+    {
+      "src": "https://mocha-cdn.com/og.png",
+      "type": "image/png", 
+      "sizes": "750x1334",
+      "form_factor": "narrow",
+      "label": "Mobile VintageVision Experience"
+    }
+  ],
+  "icons": [
+    {
+      "src": "https://mocha-cdn.com/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon",
+      "purpose": "any"
+    },
+    {
+      "src": "https://mocha-cdn.com/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://mocha-cdn.com/apple-touch-icon.png", 
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://mocha-cdn.com/apple-touch-icon.png",
+      "sizes": "512x512", 
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Quick Identify",
+      "short_name": "Identify",
+      "description": "Instantly identify a vintage item",
+      "url": "/?action=camera",
+      "icons": [
+        {
+          "src": "https://mocha-cdn.com/apple-touch-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "My Collection",
+      "short_name": "Collection", 
+      "description": "View your saved vintage items",
+      "url": "/collection",
+      "icons": [
+        {
+          "src": "https://mocha-cdn.com/apple-touch-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Wishlist",
+      "short_name": "Wishlist",
+      "description": "Check your wishlist for new matches",
+      "url": "/wishlist",
+      "icons": [
+        {
+          "src": "https://mocha-cdn.com/apple-touch-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "protocol_handlers": [
+    {
+      "protocol": "web+vintagevision",
+      "url": "/?share=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui", "browser"],
+  "handle_links": "preferred"
+}
