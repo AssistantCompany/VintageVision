@@ -30,3 +30,6 @@ coverage/
 # Misc
 *.pem
 .npmrc
+
+# Sensitive files
+legacy/openai_key.md
