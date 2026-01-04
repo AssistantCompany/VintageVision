@@ -25,9 +25,10 @@ import FloatingParticles from '@/components/ui/FloatingParticles'
 import UserMenu from '@/components/shared/UserMenu'
 import SimpleImageUploader from '@/components/enhanced/SimpleImageUploader'
 import PremiumAnalysisResult from '@/components/enhanced/PremiumAnalysisResult'
-import AdvancedLoadingSpinner from '@/components/ui/AdvancedLoadingSpinner'
+import AnalysisProgressView from '@/components/analysis/AnalysisProgressView'
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
 import { useVintageAnalysis } from '@/hooks/useVintageAnalysis'
+import { useAnalysisStream } from '@/hooks/useAnalysisStream'
 import { ItemAnalysis } from '@/types'
 
 import { trackEvent } from '@/lib/utils'
@@ -39,7 +40,9 @@ export default function PremiumLandingPage() {
   const notifications = useNotifications()
   const [currentAnalysis, setCurrentAnalysis] = useState<ItemAnalysis | null>(null)
   const [showResult, setShowResult] = useState(false)
-  const { analyzing, error, analyzeItem, saveToCollection, submitFeedback } = useVintageAnalysis()
+  const [imagePreview, setImagePreview] = useState<string | undefined>()
+  const { analyzing, error, saveToCollection, submitFeedback } = useVintageAnalysis()
+  const { progress, startAnalysis, cancelAnalysis, isAnalyzing } = useAnalysisStream()
 
   // Parallax effects
   const heroY = useTransform(scrollY, [0, 800], [0, -200])
@@ -57,39 +60,47 @@ export default function PremiumLandingPage() {
   const testimonialsInView = useInView(testimonialsRef, { once: true })
   const ctaInView = useInView(ctaRef, { once: true })
 
-  const handleImageSelected = async (dataUrl: string) => {
+  const handleImageSelected = async (dataUrl: string, askingPrice?: number) => {
     console.log('🔥 handleImageSelected CALLED in PremiumLandingPage', {
       dataUrlLength: dataUrl?.length || 0,
-      dataUrlStart: dataUrl?.substring(0, 50) || 'undefined'
+      dataUrlStart: dataUrl?.substring(0, 50) || 'undefined',
+      askingPrice: askingPrice || 'not provided'
     })
 
-    trackEvent('image_upload_started')
+    trackEvent('image_upload_started', { hasAskingPrice: !!askingPrice })
     setShowResult(false)
     setCurrentAnalysis(null)
+    setImagePreview(dataUrl)
 
-    console.log('🚀 Calling analyzeItem...')
-    const analysis = await analyzeItem(dataUrl)
-    console.log('📊 analyzeItem returned:', { hasAnalysis: !!analysis, error })
+    console.log('🚀 Starting streaming analysis...')
 
-    if (analysis) {
-      console.log('✅ Setting analysis result state')
-      setCurrentAnalysis(analysis)
-      setShowResult(true)
-      trackEvent('analysis_completed', {
-        itemName: analysis.name,
-        confidence: analysis.confidence,
-        hasValue: !!(analysis.estimatedValueMin || analysis.estimatedValueMax)
-      })
+    try {
+      const analysis = await startAnalysis(dataUrl, askingPrice)
+      console.log('📊 Analysis returned:', { hasAnalysis: !!analysis, dealRating: analysis?.dealRating })
 
-      // Send premium notification
-      notifications.premium(
-        `Analysis complete: ${analysis.name}`,
-        analysis.estimatedValueMin ? `Estimated value: $${analysis.estimatedValueMin.toLocaleString()}+` : undefined
-      )
-    } else if (error) {
-      console.error('❌ Analysis failed:', error)
-      notifications.error('Analysis failed', error)
-      trackEvent('analysis_failed', { error })
+      if (analysis) {
+        console.log('✅ Setting analysis result state')
+        setCurrentAnalysis(analysis)
+        setShowResult(true)
+        setImagePreview(undefined)
+        trackEvent('analysis_completed', {
+          itemName: analysis.name,
+          confidence: analysis.confidence,
+          hasValue: !!(analysis.estimatedValueMin || analysis.estimatedValueMax)
+        })
+
+        // Send premium notification
+        notifications.premium(
+          `Analysis complete: ${analysis.name}`,
+          analysis.estimatedValueMin ? `Estimated value: $${analysis.estimatedValueMin.toLocaleString()}+` : undefined
+        )
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Analysis failed'
+      console.error('❌ Analysis failed:', errorMessage)
+      notifications.error('Analysis failed', errorMessage)
+      trackEvent('analysis_failed', { error: errorMessage })
+      setImagePreview(undefined)
     }
   }
 
@@ -358,27 +369,21 @@ export default function PremiumLandingPage() {
                 >
                   <SimpleImageUploader
                     onImageSelected={handleImageSelected}
-                    disabled={analyzing}
+                    disabled={isAnalyzing}
                   />
                 </motion.div>
 
-                {/* Analyzing State */}
-                {analyzing && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                  >
-                    <AdvancedLoadingSpinner
-                      variant="glass"
-                      size="xl"
-                      text="Our AI is examining your treasure, researching its history, and generating expert styling tips..."
-                    />
-                  </motion.div>
+                {/* Streaming Analysis Progress View */}
+                {isAnalyzing && (
+                  <AnalysisProgressView
+                    progress={progress}
+                    imagePreview={imagePreview}
+                    onCancel={cancelAnalysis}
+                  />
                 )}
 
                 {/* Error State */}
-                {error && !analyzing && (
+                {progress.error && !isAnalyzing && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -387,14 +392,14 @@ export default function PremiumLandingPage() {
                     <GlassCard className="p-6 max-w-md mx-auto border-red-200/50" gradient="rose">
                       <div className="flex items-center gap-3 text-red-700">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                        <p className="font-medium">{error}</p>
+                        <p className="font-medium">{progress.error}</p>
                       </div>
                     </GlassCard>
                   </motion.div>
                 )}
 
                 {/* Features Grid */}
-                {!analyzing && (
+                {!isAnalyzing && (
                   <motion.div
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -447,7 +452,7 @@ export default function PremiumLandingPage() {
                 )}
 
                 {/* User Status */}
-                {!user && !analyzing && (
+                {!user && !isAnalyzing && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}

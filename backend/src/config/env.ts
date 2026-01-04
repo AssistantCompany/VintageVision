@@ -1,5 +1,6 @@
 // Environment Configuration
 // VintageVision Self-Hosted
+// Updated: January 2026 - Added logging configuration
 
 import { config } from 'dotenv';
 import { z } from 'zod';
@@ -9,6 +10,10 @@ config();
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('production'),
   PORT: z.string().default('3000'),
+
+  // Logging
+  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  DEBUG: z.string().transform(v => v === 'true' || v === '1').default('false'),
 
   // Database
   DATABASE_URL: z.string().url(),

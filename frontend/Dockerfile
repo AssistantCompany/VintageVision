@@ -21,8 +21,9 @@ RUN npm run build
 # Production image with Nginx
 FROM nginx:alpine AS runner
 
-# Copy custom nginx config
+# Copy custom nginx config and remove default.conf (not used, prevents entrypoint warning)
 COPY nginx.conf /etc/nginx/nginx.conf
+RUN rm -f /etc/nginx/conf.d/default.conf
 
 # Copy built files from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
@@ -35,4 +36,6 @@ USER nginx
 
 EXPOSE 80
 
+# Skip default nginx entrypoint scripts (we use custom nginx.conf)
+ENTRYPOINT []
 CMD ["nginx", "-g", "daemon off;"]

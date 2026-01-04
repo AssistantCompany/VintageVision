@@ -1,15 +1,15 @@
 /**
  * VintageVision API Server
  * Self-Hosted on ScaledMinds_07
- * November 2025 - Native Hono OAuth Implementation
+ * January 2026 - Manual OAuth 2.0 Implementation (bulletproof)
  */
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger as honoLogger } from 'hono/logger';
 import { compress } from 'hono/compress';
-import { setCookie, deleteCookie } from 'hono/cookie';
-import { googleAuth } from '@hono/oauth-providers/google';
+import { setCookie, deleteCookie, getCookie } from 'hono/cookie';
+import crypto from 'crypto';
 import { env } from './config/env.js';
 import { checkDatabaseHealth, closeDatabaseConnection } from './db/client.js';
 import { checkStorageHealth, initializeBucket } from './storage/client.js';
@@ -18,6 +18,18 @@ import { errorHandler } from './middleware/error.js';
 import { requireAuth, requireCurrentUser } from './middleware/auth.js';
 import { initializeSessionStore, createSession, deleteSession } from './services/session.js';
 import { findOrCreateUser } from './services/auth.js';
+// ============================================================================
+// MANUAL OAUTH 2.0 CONFIGURATION - Full control for debugging
+// ============================================================================
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo';
+// THE redirect_uri - this MUST exactly match what's in Google Console
+// Using same route for both initiate and callback (no /callback suffix)
+const OAUTH_REDIRECT_URI = `${env.FRONTEND_URL}/api/auth/google`;
+console.log('🔐 OAuth Configuration:');
+console.log(`   Client ID: ${env.GOOGLE_CLIENT_ID.substring(0, 20)}...`);
+console.log(`   Redirect URI: ${OAUTH_REDIRECT_URI}`);
 // Import routes
 import analyzeRoutes from './routes/analyze.js';
 import collectionRoutes from './routes/collection.js';
@@ -60,29 +72,125 @@ app.get('/health', async (c) => {
     }, criticalServicesHealthy ? 200 : 503);
 });
 // ============================================================================
-// AUTHENTICATION ROUTES - Native Hono OAuth
+// AUTHENTICATION ROUTES - Manual OAuth 2.0 (Bulletproof Implementation)
 // ============================================================================
 /**
- * Google OAuth Route
- * Handles both OAuth initiation and callback
+ * Debug endpoint - shows exactly what redirect_uri we're using
+ * Visit /api/auth/debug to see the configuration
  */
-app.get('/api/auth/google', googleAuth({
-    client_id: env.GOOGLE_CLIENT_ID,
-    client_secret: env.GOOGLE_CLIENT_SECRET,
-    redirect_uri: `${env.FRONTEND_URL}/api/auth/google`, // Explicit redirect URI for nginx proxy
-    scope: ['openid', 'email', 'profile'],
-}), async (c) => {
+app.get('/api/auth/debug', (c) => {
+    return c.json({
+        message: 'OAuth Debug Information',
+        redirect_uri: OAUTH_REDIRECT_URI,
+        client_id: env.GOOGLE_CLIENT_ID,
+        instructions: [
+            'The redirect_uri above MUST be added to Google Cloud Console',
+            'Go to: console.cloud.google.com > APIs & Services > Credentials',
+            'Find your OAuth 2.0 Client ID and click Edit',
+            'Add the redirect_uri to "Authorized redirect URIs"',
+            'Wait 5 minutes for changes to propagate',
+        ],
+    });
+});
+/**
+ * Google OAuth - Single route handles both initiation and callback
+ * If no 'code' param: redirect to Google
+ * If 'code' param present: handle callback
+ */
+app.get('/api/auth/google', async (c) => {
+    const code = c.req.query('code');
+    // If no code, this is the initiation - redirect to Google
+    if (!code) {
+        // Generate random state for CSRF protection
+        const state = crypto.randomBytes(32).toString('hex');
+        // Build the authorization URL manually
+        const params = new URLSearchParams({
+            client_id: env.GOOGLE_CLIENT_ID,
+            redirect_uri: OAUTH_REDIRECT_URI,
+            response_type: 'code',
+            scope: 'openid email profile',
+            state: state,
+            access_type: 'offline',
+            prompt: 'consent',
+        });
+        const authUrl = `${GOOGLE_AUTH_URL}?${params.toString()}`;
+        console.log('🔐 OAuth Initiation:');
+        console.log(`   Redirect URI: ${OAUTH_REDIRECT_URI}`);
+        console.log(`   State: ${state.substring(0, 16)}...`);
+        console.log(`   Full Auth URL: ${authUrl.substring(0, 100)}...`);
+        // Store state in cookie for verification
+        setCookie(c, 'oauth_state', state, {
+            path: '/',
+            httpOnly: true,
+            secure: env.NODE_ENV === 'production',
+            sameSite: 'Lax',
+            maxAge: 600, // 10 minutes
+        });
+        return c.redirect(authUrl, 302);
+    }
+    // Code is present - this is the callback from Google
     try {
-        // Get user info from Google
-        const googleUser = c.get('user-google');
-        if (!googleUser) {
-            console.error('❌ No user data returned from Google OAuth');
-            return c.redirect(`${env.FRONTEND_URL}?auth=failed`, 302);
+        const state = c.req.query('state');
+        const error = c.req.query('error');
+        const errorDescription = c.req.query('error_description');
+        console.log('🔐 OAuth Callback received:');
+        console.log(`   Code: present`);
+        console.log(`   State: ${state ? state.substring(0, 16) + '...' : 'missing'}`);
+        console.log(`   Error: ${error || 'none'}`);
+        // Check for errors from Google
+        if (error) {
+            console.error(`❌ Google OAuth error: ${error} - ${errorDescription}`);
+            return c.redirect(`${env.FRONTEND_URL}?auth=error&reason=${encodeURIComponent(error)}`, 302);
         }
+        // Verify state matches
+        const savedState = getCookie(c, 'oauth_state');
+        if (!savedState || savedState !== state) {
+            console.error('❌ State mismatch - possible CSRF attack');
+            console.error(`   Saved: ${savedState?.substring(0, 16)}...`);
+            console.error(`   Received: ${state?.substring(0, 16)}...`);
+            return c.redirect(`${env.FRONTEND_URL}?auth=error&reason=state_mismatch`, 302);
+        }
+        // Clear the state cookie
+        deleteCookie(c, 'oauth_state', { path: '/' });
+        // Exchange code for tokens
+        console.log('🔄 Exchanging code for tokens...');
+        const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                client_id: env.GOOGLE_CLIENT_ID,
+                client_secret: env.GOOGLE_CLIENT_SECRET,
+                code: code,
+                grant_type: 'authorization_code',
+                redirect_uri: OAUTH_REDIRECT_URI,
+            }),
+        });
+        if (!tokenResponse.ok) {
+            const errorText = await tokenResponse.text();
+            console.error('❌ Token exchange failed:', errorText);
+            return c.redirect(`${env.FRONTEND_URL}?auth=error&reason=token_exchange`, 302);
+        }
+        const tokens = await tokenResponse.json();
+        console.log('✅ Tokens received');
+        // Get user info from Google
+        console.log('🔄 Fetching user info...');
+        const userResponse = await fetch(GOOGLE_USERINFO_URL, {
+            headers: {
+                Authorization: `Bearer ${tokens.access_token}`,
+            },
+        });
+        if (!userResponse.ok) {
+            const errorText = await userResponse.text();
+            console.error('❌ User info fetch failed:', errorText);
+            return c.redirect(`${env.FRONTEND_URL}?auth=error&reason=userinfo`, 302);
+        }
+        const googleUser = await userResponse.json();
         console.log('✅ Google OAuth successful:', googleUser.email);
         // Find or create user in our database
         const user = await findOrCreateUser(googleUser);
-        // Create session (stores user.id, not googleId)
+        // Create session
         const sessionToken = await createSession(user.id);
         console.log('✅ Session created for user:', user.email);
         // Set session cookie
@@ -98,8 +206,8 @@ app.get('/api/auth/google', googleAuth({
         return c.redirect(env.FRONTEND_URL, 302);
     }
     catch (error) {
-        console.error('❌ OAuth error:', error);
-        return c.redirect(`${env.FRONTEND_URL}?auth=error`, 302);
+        console.error('❌ OAuth callback error:', error);
+        return c.redirect(`${env.FRONTEND_URL}?auth=error&reason=server_error`, 302);
     }
 });
 /**
@@ -237,7 +345,7 @@ async function start() {
         console.log(`║  💾 Sessions:   Redis (60-day expiry)            ║`);
         console.log(`║  🗄️  Database:   PostgreSQL (Drizzle ORM)         ║`);
         console.log(`║  📁 Storage:    MinIO (S3-Compatible)            ║`);
-        console.log(`║  🤖 AI:         OpenAI GPT-4o Vision             ║`);
+        console.log(`║  🤖 AI:         OpenAI GPT-5.2 Vision            ║`);
         console.log('║                                                   ║');
         console.log('╚═══════════════════════════════════════════════════╝');
         console.log('');
@@ -245,8 +353,13 @@ async function start() {
         console.log('');
     });
 }
-start().catch((error) => {
-    console.error('❌ Failed to start server:', error);
-    process.exit(1);
-});
+export { app, start };
+// Only start if run directly
+import { fileURLToPath } from 'url';
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    start().catch((error) => {
+        console.error('❌ Failed to start server:', error);
+        process.exit(1);
+    });
+}
 //# sourceMappingURL=index.js.map

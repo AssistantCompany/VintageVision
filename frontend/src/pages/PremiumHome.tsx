@@ -25,19 +25,20 @@ export default function PremiumHome() {
   const [showTester, setShowTester] = useState(false)
   const { analyzing, error, analyzeItem, saveToCollection, submitFeedback } = useVintageAnalysis()
 
-  const handleImageSelected = async (dataUrl: string) => {
+  const handleImageSelected = async (dataUrl: string, askingPrice?: number) => {
     console.log('🔥 handleImageSelected CALLED in PremiumHome', {
       dataUrlLength: dataUrl?.length || 0,
-      dataUrlStart: dataUrl?.substring(0, 50) || 'undefined'
+      dataUrlStart: dataUrl?.substring(0, 50) || 'undefined',
+      askingPrice: askingPrice || 'not provided'
     })
 
-    trackEvent('image_upload_started')
+    trackEvent('image_upload_started', { hasAskingPrice: !!askingPrice })
     setShowResult(false)
     setCurrentAnalysis(null)
 
     console.log('🚀 Calling analyzeItem...')
-    const analysis = await analyzeItem(dataUrl)
-    console.log('📊 analyzeItem returned:', { hasAnalysis: !!analysis, error })
+    const analysis = await analyzeItem(dataUrl, askingPrice)
+    console.log('📊 analyzeItem returned:', { hasAnalysis: !!analysis, error, dealRating: analysis?.dealRating })
 
     if (analysis) {
       console.log('✅ Analysis successful, setting state')

@@ -1,4 +1,4 @@
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import { 
   Sparkles, 
@@ -27,7 +27,7 @@ export default function LandingPage() {
   // Simple intersection observers for animations - NO parallax to prevent overlap
   const [heroRef, heroInView] = useInView({ threshold: 0.1, triggerOnce: true });
   const [featuresRef, featuresInView] = useInView({ threshold: 0.1, triggerOnce: true });
-  const [statsRef, statsInView] = useInView({ threshold: 0.1, triggerOnce: true });
+  const [statsRef] = useInView({ threshold: 0.1, triggerOnce: true });
 
   
 

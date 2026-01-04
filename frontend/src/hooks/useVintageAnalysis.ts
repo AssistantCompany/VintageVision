@@ -5,10 +5,11 @@ export function useVintageAnalysis() {
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const analyzeItem = useCallback(async (dataUrl: string): Promise<ItemAnalysis | null> => {
+  const analyzeItem = useCallback(async (dataUrl: string, askingPrice?: number): Promise<ItemAnalysis | null> => {
     console.log('🔬 analyzeItem called', {
       hasDataUrl: !!dataUrl,
-      dataUrlLength: dataUrl?.length || 0
+      dataUrlLength: dataUrl?.length || 0,
+      askingPrice: askingPrice || 'not provided'
     })
 
     setAnalyzing(true)
@@ -38,13 +39,18 @@ export function useVintageAnalysis() {
         throw new Error('Image too small or corrupted. Please try a different image.')
       }
 
-      console.log('Sending analysis request...')
+      console.log('Sending analysis request...', { hasAskingPrice: !!askingPrice })
+      const requestBody: { image: string; askingPrice?: number } = { image: dataUrl }
+      if (askingPrice !== undefined && askingPrice > 0) {
+        requestBody.askingPrice = askingPrice
+      }
+
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ image: dataUrl }),
+        body: JSON.stringify(requestBody),
       })
 
       console.log('Analysis response received:', response.status, response.statusText)
@@ -85,14 +91,35 @@ export function useVintageAnalysis() {
         estimatedValueMin: rawAnalysis.estimated_value_min || rawAnalysis.estimatedValueMin,
         estimatedValueMax: rawAnalysis.estimated_value_max || rawAnalysis.estimatedValueMax,
         imageUrl: rawAnalysis.image_url || rawAnalysis.imageUrl || '',
-        stylingSuggestions: rawAnalysis.styling_suggestions 
-          ? (typeof rawAnalysis.styling_suggestions === 'string' 
-              ? JSON.parse(rawAnalysis.styling_suggestions) 
+        stylingSuggestions: rawAnalysis.styling_suggestions
+          ? (typeof rawAnalysis.styling_suggestions === 'string'
+              ? JSON.parse(rawAnalysis.styling_suggestions)
               : rawAnalysis.styling_suggestions)
           : (rawAnalysis.stylingSuggestions || []),
-        marketplaceLinks: rawAnalysis.marketplaceLinks || []
+        marketplaceLinks: rawAnalysis.marketplaceLinks || [],
+        // Authentication fields
+        authenticationConfidence: rawAnalysis.authentication_confidence || rawAnalysis.authenticationConfidence || null,
+        authenticityRisk: rawAnalysis.authenticity_risk || rawAnalysis.authenticityRisk || null,
+        authenticationChecklist: rawAnalysis.authentication_checklist
+          ? (typeof rawAnalysis.authentication_checklist === 'string'
+              ? JSON.parse(rawAnalysis.authentication_checklist)
+              : rawAnalysis.authentication_checklist)
+          : (rawAnalysis.authenticationChecklist || null),
+        knownFakeIndicators: rawAnalysis.known_fake_indicators
+          ? (typeof rawAnalysis.known_fake_indicators === 'string'
+              ? JSON.parse(rawAnalysis.known_fake_indicators)
+              : rawAnalysis.known_fake_indicators)
+          : (rawAnalysis.knownFakeIndicators || null),
+        additionalPhotosRequested: rawAnalysis.additional_photos_requested
+          ? (typeof rawAnalysis.additional_photos_requested === 'string'
+              ? JSON.parse(rawAnalysis.additional_photos_requested)
+              : rawAnalysis.additional_photos_requested)
+          : (rawAnalysis.additionalPhotosRequested || null),
+        expertReferralRecommended: rawAnalysis.expert_referral_recommended ?? rawAnalysis.expertReferralRecommended ?? null,
+        expertReferralReason: rawAnalysis.expert_referral_reason || rawAnalysis.expertReferralReason || null,
+        authenticationAssessment: rawAnalysis.authentication_assessment || rawAnalysis.authenticationAssessment || null,
       }
-      
+
       return analysis
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'

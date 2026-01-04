@@ -192,14 +192,23 @@ export function sendPushNotification(title: string, options?: NotificationOption
 }
 
 // Rich notification for analysis completion
+// Note: This function can be called from anywhere (not a hook)
 export function notifyAnalysisComplete(itemName: string, estimatedValue?: string) {
-  const notifications = useNotifications()
-  
-  notifications.premium(
-    `Analysis complete: ${itemName}`,
-    estimatedValue ? `Estimated value: ${estimatedValue}` : 'Discover its story and value!'
-  )
-  
+  // Haptic feedback for premium notification
+  vibrate(50)
+
+  // Show premium toast notification
+  toast.custom(() => (
+    <CustomNotification
+      message={`Analysis complete: ${itemName}`}
+      type="premium"
+      description={estimatedValue ? `Estimated value: ${estimatedValue}` : 'Discover its story and value!'}
+    />
+  ), {
+    duration: 8000,
+    position: 'top-right',
+  })
+
   // Push notification for background
   sendPushNotification('VintageVision Analysis Complete', {
     body: `Your ${itemName} has been analyzed with AI precision`,

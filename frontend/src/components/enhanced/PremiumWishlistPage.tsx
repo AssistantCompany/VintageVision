@@ -68,15 +68,14 @@ export default function PremiumWishlistPage() {
   })
 
   useEffect(() => {
-    console.log('PremiumWishlistPage mounting, user:', user?.id)
     if (user) {
       fetchWishlistItems()
     } else {
-      console.log('No user found, redirecting to home')
       notifications.info('Please sign in to access your wishlist')
       navigate('/')
     }
-  }, [user, navigate, notifications])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
 
   const fetchWishlistItems = async () => {
     try {
@@ -182,11 +181,8 @@ export default function PremiumWishlistPage() {
   const totalMatches = wishlistItems.reduce((sum, item) => sum + (item.matches?.length || 0), 0)
 
   if (!user) {
-    console.log('PremiumWishlistPage: No user, returning null')
     return null
   }
-
-  console.log('PremiumWishlistPage rendering, loading:', loading, 'items:', wishlistItems.length)
 
   return (
     <div className="min-h-screen">

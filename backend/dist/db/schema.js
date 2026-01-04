@@ -22,6 +22,7 @@ export const sessions = pgTable('sessions', {
     expire: timestamp('expire', { withTimezone: true }).notNull(),
 });
 // Item Analyses (AI Analysis Results)
+// World-Class Implementation - January 2026
 export const itemAnalyses = pgTable('item_analyses', {
     id: uuid('id').defaultRandom().primaryKey(),
     name: text('name').notNull(),
@@ -34,10 +35,58 @@ export const itemAnalyses = pgTable('item_analyses', {
     confidence: real('confidence').notNull(),
     imageUrl: text('image_url').notNull(),
     stylingSuggestions: jsonb('styling_suggestions'),
+    // Product identification (Jan 2026)
+    brand: text('brand'),
+    modelNumber: text('model_number'),
+    productCategory: text('product_category'), // 'antique' | 'vintage' | 'modern_branded' | 'modern_generic'
+    productUrl: text('product_url'),
+    currentRetailPrice: integer('current_retail_price'), // in cents
+    // === WORLD-CLASS ENHANCEMENT (Jan 2026) ===
+    // Asking price & deal analysis
+    askingPrice: integer('asking_price'), // User-provided asking price (cents)
+    dealRating: text('deal_rating'), // 'exceptional' | 'good' | 'fair' | 'overpriced'
+    dealExplanation: text('deal_explanation'),
+    profitPotentialMin: integer('profit_potential_min'), // cents
+    profitPotentialMax: integer('profit_potential_max'), // cents
+    // Flip/Resale assessment
+    flipDifficulty: text('flip_difficulty'), // 'easy' | 'moderate' | 'hard' | 'very_hard'
+    flipTimeEstimate: text('flip_time_estimate'), // "2-4 weeks", etc.
+    resaleChannels: jsonb('resale_channels'), // ["eBay", "1stDibs", ...]
+    // Evidence-based identification
+    identificationConfidence: real('identification_confidence'), // 0.0 to 1.0
+    evidenceFor: jsonb('evidence_for'), // Array of supporting evidence
+    evidenceAgainst: jsonb('evidence_against'), // Array of contradicting evidence
+    alternativeCandidates: jsonb('alternative_candidates'), // Other possibilities
+    // Verification guidance
+    verificationTips: jsonb('verification_tips'), // What to check before buying
+    redFlags: jsonb('red_flags'), // Warning signs detected
+    // Enhanced categorization
+    domainExpert: text('domain_expert'), // 'furniture' | 'ceramics' | 'jewelry' | etc.
+    itemSubcategory: text('item_subcategory'), // More specific category
+    // Comparable sales
+    comparableSales: jsonb('comparable_sales'), // Reference sales data
+    // Maker/Attribution details
+    maker: text('maker'), // Identified maker/craftsman
+    makerConfidence: real('maker_confidence'),
+    attributionNotes: text('attribution_notes'),
+    periodStart: integer('period_start'), // Earliest likely year
+    periodEnd: integer('period_end'), // Latest likely year
+    originRegion: text('origin_region'), // Geographic origin
+    // === AUTHENTICATION SYSTEM (Jan 2026) ===
+    // Separate authentication assessment from identification
+    authenticationConfidence: real('authentication_confidence'), // 0.0 to 1.0
+    authenticityRisk: text('authenticity_risk'), // 'low' | 'medium' | 'high' | 'very_high'
+    authenticationChecklist: jsonb('authentication_checklist'), // Domain-specific verification checks
+    knownFakeIndicators: jsonb('known_fake_indicators'), // What fakes typically show
+    additionalPhotosRequested: jsonb('additional_photos_requested'), // Photos needed for deeper auth
+    expertReferralRecommended: boolean('expert_referral_recommended'),
+    expertReferralReason: text('expert_referral_reason'),
+    authenticationAssessment: text('authentication_assessment'), // Overall auth assessment text
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 }, (table) => ({
     confidenceCheck: check('confidence_check', sql `${table.confidence} >= 0 AND ${table.confidence} <= 1`),
+    authConfidenceCheck: check('auth_confidence_check', sql `${table.authenticationConfidence} IS NULL OR (${table.authenticationConfidence} >= 0 AND ${table.authenticationConfidence} <= 1)`),
 }));
 // Collection Items (User Saved Items)
 export const collectionItems = pgTable('collection_items', {
@@ -96,6 +145,18 @@ export const marketplaceLinks = pgTable('marketplace_links', {
 }, (table) => ({
     confidenceScoreCheck: check('confidence_score_check', sql `${table.confidenceScore} >= 0 AND ${table.confidenceScore} <= 1`),
 }));
+// Additional Photos for Authentication
+// Stores follow-up photos submitted during authentication flow
+export const additionalPhotos = pgTable('additional_photos', {
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemAnalysisId: uuid('item_analysis_id').notNull().references(() => itemAnalyses.id, { onDelete: 'cascade' }),
+    photoType: text('photo_type').notNull(), // 'caseback', 'movement', 'signature', 'detail', etc.
+    imageUrl: text('image_url').notNull(),
+    analysisResult: jsonb('analysis_result'), // AI analysis of this specific photo
+    findingsFor: jsonb('findings_for'), // Evidence supporting authenticity
+    findingsAgainst: jsonb('findings_against'), // Evidence against authenticity
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
 // Analytics Events
 export const analyticsEvents = pgTable('analytics_events', {
     id: uuid('id').defaultRandom().primaryKey(),

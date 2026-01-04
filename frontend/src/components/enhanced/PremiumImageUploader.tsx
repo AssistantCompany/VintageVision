@@ -1,14 +1,16 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Camera, 
-  Upload, 
-  X, 
-  RotateCcw, 
-  Palette, 
+import {
+  Camera,
+  Upload,
+  X,
+  RotateCcw,
+  Palette,
   Zap,
   Sparkles,
-  CheckCircle
+  CheckCircle,
+  DollarSign,
+  TrendingUp
 } from 'lucide-react'
 import { useImageUpload } from '@/hooks/useImageUpload'
 import GlassCard from '@/components/ui/GlassCard'
@@ -19,21 +21,24 @@ import FloatingParticles from '@/components/ui/FloatingParticles'
 import { cn, vibrate, trackEvent } from '@/lib/utils'
 
 interface PremiumImageUploaderProps {
-  onImageSelected: (dataUrl: string) => void
+  onImageSelected: (dataUrl: string, askingPrice?: number) => void
   disabled?: boolean
   className?: string
+  showAskingPrice?: boolean
 }
 
-export default function PremiumImageUploader({ 
-  onImageSelected, 
+export default function PremiumImageUploader({
+  onImageSelected,
   disabled,
-  className 
+  className,
+  showAskingPrice = true
 }: PremiumImageUploaderProps) {
   const { uploading, error, selectFromFile, captureFromCamera } = useImageUpload()
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
+  const [askingPrice, setAskingPrice] = useState<string>('')
   const inputRef = useRef<HTMLInputElement>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
@@ -130,16 +135,22 @@ export default function PremiumImageUploader({
   const confirmImage = () => {
     console.log('🔘 Confirm button clicked', {
       hasSelectedImage: !!selectedImage,
-      imageLength: selectedImage?.length || 0
+      imageLength: selectedImage?.length || 0,
+      askingPrice: askingPrice || 'not provided'
     })
 
     if (selectedImage) {
-      trackEvent('image_confirmed')
+      trackEvent('image_confirmed', { hasAskingPrice: !!askingPrice })
       vibrate([50, 50, 100])
-      console.log('🚀 Calling onImageSelected callback with dataUrl length:', selectedImage.length)
-      onImageSelected(selectedImage)
+
+      // Parse asking price - convert dollars to cents for API
+      const priceInCents = askingPrice ? Math.round(parseFloat(askingPrice) * 100) : undefined
+
+      console.log('🚀 Calling onImageSelected callback with dataUrl length:', selectedImage.length, 'askingPrice:', priceInCents)
+      onImageSelected(selectedImage, priceInCents)
       setShowPreview(false)
       setSelectedImage(null)
+      setAskingPrice('')
       console.log('✅ Callback sent, state reset')
     } else {
       console.error('❌ No selected image to confirm!')
@@ -150,6 +161,7 @@ export default function PremiumImageUploader({
     trackEvent('image_retake')
     setSelectedImage(null)
     setShowPreview(false)
+    setAskingPrice('')
   }
 
   
@@ -460,6 +472,48 @@ export default function PremiumImageUploader({
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent" />
                 </motion.div>
+
+                {/* Asking Price Input - Deal Analysis Feature */}
+                {showAskingPrice && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="max-w-sm mx-auto"
+                  >
+                    <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-5 border border-green-200">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                          <TrendingUp className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <p className="font-semibold text-gray-800 text-sm">Deal Analysis</p>
+                          <p className="text-xs text-gray-500">Optional: Get profit potential</p>
+                        </div>
+                      </div>
+
+                      <div className="relative">
+                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-500" />
+                        <input
+                          type="number"
+                          value={askingPrice}
+                          onChange={(e) => setAskingPrice(e.target.value)}
+                          placeholder="Asking price"
+                          min="0"
+                          step="0.01"
+                          className="w-full pl-10 pr-4 py-3 bg-white rounded-xl border-2 border-green-200 focus:border-green-400 focus:ring-2 focus:ring-green-100 text-lg font-semibold text-gray-800 placeholder:text-gray-400 placeholder:font-normal transition-all"
+                        />
+                      </div>
+
+                      <p className="text-xs text-green-600 mt-2 text-center">
+                        {askingPrice
+                          ? `We'll compare $${parseFloat(askingPrice).toFixed(2)} to market value`
+                          : 'Enter the seller\'s asking price for deal rating'
+                        }
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
 
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <MagneticButton

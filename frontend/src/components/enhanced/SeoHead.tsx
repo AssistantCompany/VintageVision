@@ -11,7 +11,7 @@ interface SeoHeadProps {
 export default function SeoHead({
   title = 'VintageVision - AI Antique Expert',
   description = 'Turn your phone into an antique expert. Instantly identify vintage treasures with AI-powered analysis.',
-  image = 'https://mocha-cdn.com/og.png',
+  image,
   type = 'website'
 }: SeoHeadProps) {
   const location = useLocation();
@@ -24,7 +24,7 @@ export default function SeoHead({
     const updateMeta = (name: string, content: string, property = false) => {
       const selector = property ? `meta[property="${name}"]` : `meta[name="${name}"]`;
       let meta = document.querySelector(selector) as HTMLMetaElement;
-      
+
       if (!meta) {
         meta = document.createElement('meta');
         if (property) {
@@ -34,7 +34,7 @@ export default function SeoHead({
         }
         document.head.appendChild(meta);
       }
-      
+
       meta.setAttribute('content', content);
     };
 
@@ -45,15 +45,19 @@ export default function SeoHead({
     // Open Graph
     updateMeta('og:title', title, true);
     updateMeta('og:description', description, true);
-    updateMeta('og:image', image, true);
+    if (image) {
+      updateMeta('og:image', image, true);
+    }
     updateMeta('og:url', window.location.href, true);
     updateMeta('og:type', type, true);
 
     // Twitter Card
     updateMeta('twitter:title', title);
     updateMeta('twitter:description', description);
-    updateMeta('twitter:image', image);
-    updateMeta('twitter:card', 'summary_large_image');
+    if (image) {
+      updateMeta('twitter:image', image);
+    }
+    updateMeta('twitter:card', image ? 'summary_large_image' : 'summary');
 
     // Structured data for search engines
     const structuredData = {
