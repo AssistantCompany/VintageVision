@@ -25,6 +25,7 @@ import FloatingParticles from '@/components/ui/FloatingParticles'
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
 import { cn, formatCurrency, formatRelativeTime, trackEvent } from '@/lib/utils'
 import PullToRefresh from '@/components/mobile/PullToRefresh'
+import CollectionItemDetailModal from '@/components/enhanced/CollectionItemDetailModal'
 
 interface CollectionItem {
   id: string
@@ -50,9 +51,9 @@ export default function PremiumCollectionPage() {
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   
   const [sortBy, setSortBy] = useState<'recent' | 'value' | 'name'>('recent')
+  const [detailItem, setDetailItem] = useState<CollectionItem | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -119,43 +120,46 @@ export default function PremiumCollectionPage() {
     }
   }
 
-  const handleDeleteItem = async (itemId: string) => {
+  const handleDeleteItem = async (itemId: string): Promise<void> => {
     try {
       const response = await fetch(`/api/collection/${itemId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        credentials: 'include'
       })
-      
+
       if (response.ok) {
         setItems(items.filter(item => item.id !== itemId))
-        setSelectedItems(prev => {
-          const next = new Set(prev)
-          next.delete(itemId)
-          return next
-        })
-        notifications.success('Item removed from collection')
         trackEvent('collection_item_deleted')
+      } else {
+        throw new Error('Failed to delete item')
       }
     } catch (error) {
       notifications.error('Failed to remove item')
+      throw error
     }
   }
 
-  const handleBulkDelete = async () => {
-    if (selectedItems.size === 0) return
-    
+  const handleUpdateNotes = async (itemId: string, notes: string, location: string): Promise<void> => {
     try {
-      await Promise.all(
-        Array.from(selectedItems).map(itemId =>
-          fetch(`/api/collection/${itemId}`, { method: 'DELETE' })
-        )
-      )
-      
-      setItems(items.filter(item => !selectedItems.has(item.id)))
-      setSelectedItems(new Set())
-      notifications.success(`Removed ${selectedItems.size} items from collection`)
-      trackEvent('collection_bulk_delete', { count: selectedItems.size })
+      const response = await fetch(`/api/collection/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ notes, location })
+      })
+
+      if (response.ok) {
+        setItems(items.map(item =>
+          item.id === itemId
+            ? { ...item, notes, location }
+            : item
+        ))
+        trackEvent('collection_item_updated')
+      } else {
+        throw new Error('Failed to update item')
+      }
     } catch (error) {
-      notifications.error('Failed to remove items')
+      throw error
     }
   }
 
@@ -236,7 +240,7 @@ export default function PremiumCollectionPage() {
       <PremiumHeader />
 
       <PullToRefresh onRefresh={fetchCollectionItems}>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-32">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
         {/* Header */}
         <motion.div
           className="mb-8"
@@ -316,7 +320,7 @@ export default function PremiumCollectionPage() {
                   <button
                     onClick={() => setViewMode('grid')}
                     className={cn(
-                      'p-2 rounded-lg transition-all',
+                      'p-3 min-h-12 rounded-lg transition-all',
                       viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-white/50'
                     )}
                   >
@@ -325,24 +329,13 @@ export default function PremiumCollectionPage() {
                   <button
                     onClick={() => setViewMode('list')}
                     className={cn(
-                      'p-2 rounded-lg transition-all',
+                      'p-3 min-h-12 rounded-lg transition-all',
                       viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-white/50'
                     )}
                   >
                     <List className="w-4 h-4" />
                   </button>
                 </div>
-
-                {selectedItems.size > 0 && (
-                  <MagneticButton
-                    onClick={handleBulkDelete}
-                    variant="secondary"
-                    size="sm"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete ({selectedItems.size})
-                  </MagneticButton>
-                )}
 
                 <MagneticButton
                   onClick={handleExport}
@@ -424,27 +417,16 @@ export default function PremiumCollectionPage() {
                   transition={{ delay: index * 0.05 }}
                 >
                   <SpotlightEffect>
-                    <GlassCard 
-                      className={cn(
-                        'overflow-hidden cursor-pointer group',
-                        selectedItems.has(item.id) && 'ring-2 ring-purple-500'
-                      )}
+                    <GlassCard
+                      className="overflow-hidden cursor-pointer group"
                       hover
                     >
-                      <div 
+                      <div
                         className={cn(
                           'flex',
                           viewMode === 'grid' ? 'flex-col' : 'flex-row gap-6'
                         )}
-                        onClick={() => {
-                          const newSelected = new Set(selectedItems)
-                          if (newSelected.has(item.id)) {
-                            newSelected.delete(item.id)
-                          } else {
-                            newSelected.add(item.id)
-                          }
-                          setSelectedItems(newSelected)
-                        }}
+                        onClick={() => setDetailItem(item)}
                       >
                         {/* Image */}
                         <div className={cn(
@@ -465,11 +447,11 @@ export default function PremiumCollectionPage() {
                             <div
                               onClick={(e) => {
                                 e.stopPropagation()
-                                // Navigate to detailed view
+                                setDetailItem(item)
                               }}
                             >
                               <MagneticButton
-                                onClick={() => {}}
+                                onClick={() => setDetailItem(item)}
                                 variant="glass"
                                 size="sm"
                                 className="!p-2"
@@ -494,16 +476,6 @@ export default function PremiumCollectionPage() {
                             </div>
                           </div>
 
-                          {/* Selection Indicator */}
-                          {selectedItems.has(item.id) && (
-                            <div className="absolute top-3 left-3 w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
-                              <motion.div
-                                initial={{ scale: 0 }}
-                                animate={{ scale: 1 }}
-                                className="w-3 h-3 bg-white rounded-full"
-                              />
-                            </div>
-                          )}
                         </div>
 
                         {/* Content */}
@@ -573,6 +545,15 @@ export default function PremiumCollectionPage() {
         </AnimatePresence>
       </div>
       </PullToRefresh>
+
+      {/* Collection Item Detail Modal */}
+      <CollectionItemDetailModal
+        item={detailItem}
+        isOpen={detailItem !== null}
+        onClose={() => setDetailItem(null)}
+        onDelete={handleDeleteItem}
+        onUpdateNotes={handleUpdateNotes}
+      />
     </div>
   )
 }
