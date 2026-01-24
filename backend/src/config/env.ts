@@ -52,6 +52,9 @@ const envSchema = z.object({
   STRIPE_PRICE_COLLECTOR_ANNUAL: z.string().optional(),
   STRIPE_PRICE_PROFESSIONAL_MONTHLY: z.string().optional(),
   STRIPE_PRICE_PROFESSIONAL_ANNUAL: z.string().optional(),
+
+  // Sentry (Error Monitoring - Optional)
+  SENTRY_DSN: z.string().url().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

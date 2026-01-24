@@ -4,6 +4,10 @@
  * January 2026 - Manual OAuth 2.0 Implementation (bulletproof)
  */
 
+// Initialize Sentry FIRST before any other imports
+import { initSentry, sentryMiddleware, flushSentry, reportErrorToSentry } from './services/sentry.js';
+initSentry();
+
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
@@ -56,6 +60,9 @@ import stripeRoutes from './routes/stripe.js';
 
 // Create Hono app
 const app = new Hono();
+
+// Sentry request tracking middleware (must be early in the chain)
+app.use('*', sentryMiddleware());
 
 // Logging middleware
 app.use('*', honoLogger());
@@ -354,6 +361,8 @@ app.notFound((c) => {
 
 // Global error handler
 app.onError((err, c) => {
+  // Report error to Sentry before handling
+  reportErrorToSentry(err, c);
   return errorHandler(err, c);
 });
 
@@ -386,6 +395,9 @@ async function shutdown(signal: string) {
   console.log(`\n⚠️  Received ${signal}, starting graceful shutdown...`);
 
   try {
+    // Flush Sentry events before shutdown
+    await flushSentry(2000);
+
     // Close database connection
     await closeDatabaseConnection();
 

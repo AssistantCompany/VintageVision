@@ -1,9 +1,10 @@
 // Error Handling Middleware
-// October 2025
+// October 2025 - Updated January 2026 with Sentry integration
 
 import type { Context } from 'hono';
 import { db } from '../db/client.js';
 import { errorLogs } from '../db/schema.js';
+import { captureException, addBreadcrumb } from '../services/sentry.js';
 
 // Custom error classes
 export class AppError extends Error {
@@ -54,8 +55,20 @@ export class ExternalServiceError extends AppError {
   }
 }
 
-// Log error to database
+// Log error to database and Sentry
 async function logError(error: Error, userId?: string, requestData?: any): Promise<void> {
+  // Report to Sentry with context
+  try {
+    captureException(error, {
+      userId,
+      requestMethod: requestData?.method,
+      requestPath: requestData?.path,
+    });
+  } catch (sentryError) {
+    console.error('❌ Failed to report error to Sentry:', sentryError);
+  }
+
+  // Also log to database
   try {
     await db.insert(errorLogs).values({
       userId: userId || null,
@@ -72,6 +85,12 @@ async function logError(error: Error, userId?: string, requestData?: any): Promi
 // Global error handler
 export async function errorHandler(err: Error, c: Context) {
   console.error('❌ Error:', err);
+
+  // Add breadcrumb for debugging
+  addBreadcrumb(`Error: ${err.message}`, 'error', 'error', {
+    errorName: err.name,
+    path: c.req.path,
+  });
 
   const req = c.req.raw as any;
   const userId = req.user?.id;
