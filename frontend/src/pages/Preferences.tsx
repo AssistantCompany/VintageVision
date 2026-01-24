@@ -98,7 +98,7 @@ export default function PreferencesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 pb-28 md:pb-8">
       <Header />
       
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -134,21 +134,21 @@ export default function PreferencesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                 {AVAILABLE_STYLES.map((style) => (
                   <button
                     key={style}
                     onClick={() => handleStyleToggle(style)}
-                    className={`p-3 text-left border rounded-lg transition-all ${
+                    className={`p-2 sm:p-3 min-h-12 text-left border rounded-lg transition-all ${
                       preferredStyles.includes(style)
                         ? 'border-purple-300 bg-purple-50 text-purple-700'
                         : 'border-gray-200 hover:border-gray-300 text-gray-700'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{style}</span>
+                      <span className="text-xs sm:text-sm font-medium">{style}</span>
                       {preferredStyles.includes(style) && (
-                        <Check className="w-4 h-4 text-purple-600" />
+                        <Check className="w-4 h-4 text-purple-600 flex-shrink-0" />
                       )}
                     </div>
                   </button>
@@ -172,21 +172,21 @@ export default function PreferencesPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                 {ROOM_TYPES.map((room) => (
                   <button
                     key={room}
                     onClick={() => handleRoomToggle(room)}
-                    className={`p-3 text-left border rounded-lg transition-all ${
+                    className={`p-2 sm:p-3 min-h-12 text-left border rounded-lg transition-all ${
                       roomTypes.includes(room)
                         ? 'border-blue-300 bg-blue-50 text-blue-700'
                         : 'border-gray-200 hover:border-gray-300 text-gray-700'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{room}</span>
+                      <span className="text-xs sm:text-sm font-medium">{room}</span>
                       {roomTypes.includes(room) && (
-                        <Check className="w-4 h-4 text-blue-600" />
+                        <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
                       )}
                     </div>
                   </button>
