@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
-import { Search, BookOpen, Heart, Sparkles } from 'lucide-react'
+import { Search, BookOpen, Heart, Sparkles, Layers } from 'lucide-react'
 import PremiumHeader from '@/components/enhanced/PremiumHeader'
 import PremiumFooter from '@/components/enhanced/PremiumFooter'
-import SimpleImageUploader from '@/components/enhanced/SimpleImageUploader'
+import SimpleImageUploader, { ConsensusMode } from '@/components/enhanced/SimpleImageUploader'
 import PremiumAnalysisResult from '@/components/enhanced/PremiumAnalysisResult'
-import ImageUploadTester from '@/components/enhanced/ImageUploadTester'
 
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
 import GlassCard from '@/components/ui/GlassCard'
@@ -14,7 +13,7 @@ import FloatingParticles from '@/components/ui/FloatingParticles'
 import SpotlightEffect from '@/components/ui/SpotlightEffect'
 import AdvancedLoadingSpinner from '@/components/ui/AdvancedLoadingSpinner'
 import { useVintageAnalysis } from '@/hooks/useVintageAnalysis'
-import { ItemAnalysis } from '@/types'
+import { ItemAnalysis, CapturedImage } from '@/types'
 import { trackEvent } from '@/lib/utils'
 
 export default function PremiumHome() {
@@ -22,22 +21,23 @@ export default function PremiumHome() {
   const notifications = useNotifications()
   const [currentAnalysis, setCurrentAnalysis] = useState<ItemAnalysis | null>(null)
   const [showResult, setShowResult] = useState(false)
-  const [showTester, setShowTester] = useState(false)
-  const { analyzing, error, analyzeItem, saveToCollection, submitFeedback } = useVintageAnalysis()
+  const [analysisMode, setAnalysisMode] = useState<'single' | 'multi'>('single')
+  const { analyzing, error, analyzeItem, analyzeMultiImage, saveToCollection, submitFeedback } = useVintageAnalysis()
 
-  const handleImageSelected = async (dataUrl: string, askingPrice?: number) => {
+  const handleImageSelected = async (dataUrl: string, consensusMode: ConsensusMode = 'auto') => {
     console.log('🔥 handleImageSelected CALLED in PremiumHome', {
       dataUrlLength: dataUrl?.length || 0,
       dataUrlStart: dataUrl?.substring(0, 50) || 'undefined',
-      askingPrice: askingPrice || 'not provided'
+      consensusMode
     })
 
-    trackEvent('image_upload_started', { hasAskingPrice: !!askingPrice })
+    setAnalysisMode('single')
+    trackEvent('image_upload_started', { consensusMode, mode: 'single' })
     setShowResult(false)
     setCurrentAnalysis(null)
 
-    console.log('🚀 Calling analyzeItem...')
-    const analysis = await analyzeItem(dataUrl, askingPrice)
+    console.log('🚀 Calling analyzeItem with consensusMode:', consensusMode)
+    const analysis = await analyzeItem(dataUrl, undefined, consensusMode)
     console.log('📊 analyzeItem returned:', { hasAnalysis: !!analysis, error, dealRating: analysis?.dealRating })
 
     if (analysis) {
@@ -47,7 +47,8 @@ export default function PremiumHome() {
       trackEvent('analysis_completed', {
         itemName: analysis.name,
         confidence: analysis.confidence,
-        hasValue: !!(analysis.estimatedValueMin || analysis.estimatedValueMax)
+        hasValue: !!(analysis.estimatedValueMin || analysis.estimatedValueMax),
+        mode: 'single'
       })
 
       // Send premium notification
@@ -58,16 +59,60 @@ export default function PremiumHome() {
     } else if (error) {
       console.error('❌ Analysis failed with error:', error)
       notifications.error('Analysis failed', error)
-      trackEvent('analysis_failed', { error })
+      trackEvent('analysis_failed', { error, mode: 'single' })
+    }
+  }
+
+  const handleMultiImageSelected = async (images: CapturedImage[], consensusMode: ConsensusMode = 'auto') => {
+    console.log('🔥 handleMultiImageSelected CALLED in PremiumHome', {
+      imageCount: images.length,
+      roles: images.map(img => img.role),
+      consensusMode
+    })
+
+    setAnalysisMode('multi')
+    trackEvent('multi_image_upload_started', {
+      imageCount: images.length,
+      roles: images.map(img => img.role),
+      consensusMode
+    })
+    setShowResult(false)
+    setCurrentAnalysis(null)
+
+    console.log('🚀 Calling analyzeMultiImage with consensusMode:', consensusMode)
+    const analysis = await analyzeMultiImage(images, undefined, consensusMode)
+    console.log('📊 analyzeMultiImage returned:', { hasAnalysis: !!analysis, error })
+
+    if (analysis) {
+      console.log('✅ Multi-image analysis successful, setting state')
+      setCurrentAnalysis(analysis)
+      setShowResult(true)
+      trackEvent('analysis_completed', {
+        itemName: analysis.name,
+        confidence: analysis.confidence,
+        hasValue: !!(analysis.estimatedValueMin || analysis.estimatedValueMax),
+        mode: 'multi',
+        imageCount: images.length
+      })
+
+      // Send premium notification with world-class badge
+      notifications.premium(
+        `World-Class Analysis: ${analysis.name}`,
+        `Analyzed ${images.length} photos for expert-level identification`
+      )
+    } else if (error) {
+      console.error('❌ Multi-image analysis failed with error:', error)
+      notifications.error('Analysis failed', error)
+      trackEvent('analysis_failed', { error, mode: 'multi' })
     }
   }
 
   const handleSaveToCollection = async (notes?: string, location?: string) => {
     if (!currentAnalysis || !user) return false
-    
+
     trackEvent('collection_save_attempt')
     const success = await saveToCollection(currentAnalysis.id, notes, location)
-    
+
     if (success) {
       notifications.success('Item saved to your collection!')
       trackEvent('collection_save_success')
@@ -75,16 +120,16 @@ export default function PremiumHome() {
       notifications.error('Failed to save item to collection')
       trackEvent('collection_save_failed')
     }
-    
+
     return success
   }
 
   const handleSubmitFeedback = async (isCorrect: boolean, correctionText?: string, feedbackType?: string) => {
     if (!currentAnalysis || !user) return
-    
+
     trackEvent('feedback_submitted', { isCorrect, feedbackType })
     const success = await submitFeedback(currentAnalysis.id, isCorrect, correctionText, feedbackType)
-    
+
     if (success) {
       notifications.success('Thank you for your feedback!')
     } else {
@@ -95,7 +140,7 @@ export default function PremiumHome() {
   const resetToHome = () => {
     setShowResult(false)
     setCurrentAnalysis(null)
-    setShowTester(false)
+    setAnalysisMode('single')
     trackEvent('reset_to_home')
   }
 
@@ -103,8 +148,8 @@ export default function PremiumHome() {
     <div className="min-h-screen relative">
       {/* Background */}
       <div className="fixed inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
-        <FloatingParticles 
-          count={80} 
+        <FloatingParticles
+          count={80}
           className="opacity-20"
           colors={['#f59e0b', '#f97316', '#ef4444', '#8b5cf6', '#06b6d4']}
         />
@@ -113,30 +158,10 @@ export default function PremiumHome() {
       <PremiumHeader onReset={resetToHome} />
 
       {/* Main Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Debug/Testing Mode Toggle */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="fixed top-4 right-4 z-50">
-            <button
-              onClick={() => setShowTester(!showTester)}
-              className="px-3 py-1 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600"
-            >
-              {showTester ? 'Hide Tester' : 'Show Tester'}
-            </button>
-          </div>
-        )}
-
+      {/* Main Content - pb-28 on mobile to account for fixed bottom nav */}
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
         <AnimatePresence mode="wait">
-          {showTester ? (
-            <motion.div
-              key="tester"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <ImageUploadTester />
-            </motion.div>
-          ) : !showResult ? (
+          {!showResult ? (
             <motion.div
               key="upload"
               initial={{ opacity: 0, y: 20 }}
@@ -157,14 +182,14 @@ export default function PremiumHome() {
                       antique expert
                     </span>
                   </h1>
-                  
+
                   <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-                    Instantly identify vintage and antique items, learn their fascinating histories, 
+                    Instantly identify vintage and antique items, learn their fascinating histories,
                     discover their market value, and get expert styling tips with the power of AI.
                   </p>
                 </motion.div>
 
-                {/* Upload Section */}
+                {/* Upload Section with Multi-Image Support */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -172,7 +197,9 @@ export default function PremiumHome() {
                 >
                   <SimpleImageUploader
                     onImageSelected={handleImageSelected}
+                    onMultiImageSelected={handleMultiImageSelected}
                     disabled={analyzing}
+                    enableMultiImage={true}
                   />
                 </motion.div>
 
@@ -186,8 +213,22 @@ export default function PremiumHome() {
                     <AdvancedLoadingSpinner
                       variant="glass"
                       size="xl"
-                      text="Our AI is examining your treasure, researching its history, and generating expert styling tips..."
+                      text={analysisMode === 'multi'
+                        ? "Performing world-class analysis on multiple photos for expert-level identification..."
+                        : "Our AI is examining your treasure, researching its history, and generating expert styling tips..."
+                      }
                     />
+                    {analysisMode === 'multi' && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.5 }}
+                        className="mt-4 flex items-center justify-center gap-2 text-amber-600"
+                      >
+                        <Layers className="w-5 h-5" />
+                        <span className="font-medium">Multi-Photo Analysis</span>
+                      </motion.div>
+                    )}
                   </motion.div>
                 )}
 
@@ -250,7 +291,7 @@ export default function PremiumHome() {
                             >
                               <feature.icon className="w-8 h-8 text-white" />
                             </motion.div>
-                            
+
                             <h3 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h3>
                             <p className="text-gray-600 leading-relaxed">{feature.description}</p>
                           </GlassCard>
@@ -275,7 +316,7 @@ export default function PremiumHome() {
                         <div className="text-left">
                           <h4 className="font-bold text-blue-900 mb-1">Unlock the Full Experience</h4>
                           <p className="text-blue-700 text-sm">
-                            Sign in to save items to your personal collection, set style preferences, 
+                            Sign in to save items to your personal collection, set style preferences,
                             and get personalized recommendations!
                           </p>
                         </div>
@@ -317,9 +358,9 @@ export default function PremiumHome() {
           )}
         </AnimatePresence>
       </main>
-      
-      
-      
+
+
+
       <PremiumFooter />
     </div>
   )
