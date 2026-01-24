@@ -109,9 +109,9 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-28 md:pb-8">
       <AnimatedBackground variant="cool" />
-      
+
       {/* Header */}
       <div className="relative z-10 p-4">
         <Glass className="p-4" blur="lg">

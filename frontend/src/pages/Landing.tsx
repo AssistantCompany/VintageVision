@@ -107,7 +107,7 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen overflow-hidden">
+    <div className="min-h-screen overflow-hidden pb-28 md:pb-8">
       <AnimatedBackground variant="vintage" />
 
       {/*

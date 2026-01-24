@@ -124,7 +124,7 @@ export default function ContactPage() {
         category: 'general',
         message: ''
       })
-    } catch (error) {
+    } catch (_error) {
       notifications.error('Failed to send message', 'Please try again or contact us directly')
     } finally {
       setIsSubmitting(false)
@@ -183,9 +183,9 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-28 md:pb-8">
       <AnimatedBackground variant="cool" />
-      
+
       {/* Header */}
       <div className="relative z-10 p-4">
         <GlassCard className="p-4" blur="lg">

@@ -108,7 +108,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-28 md:pb-8">
       <AnimatedBackground variant="warm" />
       <FloatingParticles count={40} className="opacity-20" />
       

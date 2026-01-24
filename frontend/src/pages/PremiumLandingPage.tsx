@@ -23,7 +23,7 @@ import LiquidButton from '@/components/ui/LiquidButton'
 import SpotlightEffect from '@/components/ui/SpotlightEffect'
 import FloatingParticles from '@/components/ui/FloatingParticles'
 import UserMenu from '@/components/shared/UserMenu'
-import SimpleImageUploader from '@/components/enhanced/SimpleImageUploader'
+import SimpleImageUploader, { ConsensusMode } from '@/components/enhanced/SimpleImageUploader'
 import PremiumAnalysisResult from '@/components/enhanced/PremiumAnalysisResult'
 import AnalysisProgressView from '@/components/analysis/AnalysisProgressView'
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
@@ -41,7 +41,7 @@ export default function PremiumLandingPage() {
   const [currentAnalysis, setCurrentAnalysis] = useState<ItemAnalysis | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | undefined>()
-  const { analyzing, error, saveToCollection, submitFeedback } = useVintageAnalysis()
+  const { saveToCollection, submitFeedback } = useVintageAnalysis()
   const { progress, startAnalysis, cancelAnalysis, isAnalyzing } = useAnalysisStream()
 
   // Parallax effects
@@ -60,22 +60,22 @@ export default function PremiumLandingPage() {
   const testimonialsInView = useInView(testimonialsRef, { once: true })
   const ctaInView = useInView(ctaRef, { once: true })
 
-  const handleImageSelected = async (dataUrl: string, askingPrice?: number) => {
+  const handleImageSelected = async (dataUrl: string, consensusMode: ConsensusMode = 'auto') => {
     console.log('🔥 handleImageSelected CALLED in PremiumLandingPage', {
       dataUrlLength: dataUrl?.length || 0,
       dataUrlStart: dataUrl?.substring(0, 50) || 'undefined',
-      askingPrice: askingPrice || 'not provided'
+      consensusMode
     })
 
-    trackEvent('image_upload_started', { hasAskingPrice: !!askingPrice })
+    trackEvent('image_upload_started', { consensusMode })
     setShowResult(false)
     setCurrentAnalysis(null)
     setImagePreview(dataUrl)
 
-    console.log('🚀 Starting streaming analysis...')
+    console.log('🚀 Starting streaming analysis with consensusMode:', consensusMode)
 
     try {
-      const analysis = await startAnalysis(dataUrl, askingPrice)
+      const analysis = await startAnalysis(dataUrl, undefined, consensusMode)
       console.log('📊 Analysis returned:', { hasAnalysis: !!analysis, dealRating: analysis?.dealRating })
 
       if (analysis) {
@@ -207,41 +207,33 @@ export default function PremiumLandingPage() {
   ]
 
   const stats = [
-    { number: '2M+', label: 'Items Identified', icon: Search },
-    { number: '500K+', label: 'Happy Users', icon: Heart },
-    { number: '99%', label: 'Accuracy Rate', icon: Star },
+    { number: 'AI', label: 'Powered Analysis', icon: Search },
+    { number: '15+', label: 'Expert Domains', icon: Heart },
+    { number: 'Free', label: 'To Try', icon: Star },
     { number: '150+', label: 'Style Periods', icon: Palette }
   ]
 
-  const testimonials = [
+  // Use cases showing who benefits from VintageVision
+  const useCases = [
     {
-      name: 'Sarah Chen',
-      role: 'Interior Designer',
-      location: 'San Francisco, CA',
-      avatar: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=80&h=80&fit=crop&crop=face&auto=format',
-      quote: 'VintageVision has revolutionized how I source authentic pieces for my clients. The styling suggestions are incredibly valuable and save me hours of research.',
-      rating: 5
+      role: 'Interior Designers',
+      icon: 'Palette',
+      benefit: 'Source authentic vintage pieces for clients with confidence. Get styling suggestions and verify provenance before purchasing.',
     },
     {
-      name: 'Michael Rodriguez',
-      role: 'Antique Collector',
-      location: 'New York, NY',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop&crop=face&auto=format',
-      quote: 'I can now confidently identify and value pieces at estate sales. The historical context feature is amazing - it\'s like having an expert in my pocket.',
-      rating: 5
+      role: 'Estate Sale Shoppers',
+      icon: 'Search',
+      benefit: 'Quickly identify valuable items and make informed purchases. Get instant valuations before bidding at auctions or estate sales.',
     },
     {
-      name: 'Emma Thompson',
-      role: 'Vintage Enthusiast',
-      location: 'London, UK',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=80&h=80&fit=crop&crop=face&auto=format',
-      quote: 'Finally found my grandmother\'s china pattern after years of searching! The accuracy is incredible and the app is so beautifully designed.',
-      rating: 5
+      role: 'Vintage Enthusiasts',
+      icon: 'Heart',
+      benefit: 'Discover the fascinating history behind family heirlooms and flea market finds. Build a curated collection you\'ll treasure.',
     }
   ]
 
   return (
-    <div className="min-h-screen overflow-hidden">
+    <div className="min-h-screen overflow-hidden pb-28 md:pb-8">
       {/* Background */}
       <div className="fixed inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
         <FloatingParticles 
@@ -633,55 +625,39 @@ export default function PremiumLandingPage() {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-              Loved by{' '}
+              Perfect for{' '}
               <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                Collectors
+                Everyone
               </span>
             </h2>
             <p className="text-xl text-gray-600">
-              See what our community is saying about VintageVision
+              VintageVision helps collectors, designers, and enthusiasts alike
             </p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-            {testimonials.map((testimonial, idx) => (
+            {useCases.map((useCase, idx) => (
               <motion.div
-                key={testimonial.name}
+                key={useCase.role}
                 initial={{ opacity: 0, y: 30 }}
                 animate={testimonialsInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: idx * 0.2 }}
               >
                 <GlassCard className="p-8 h-full" gradient="warm" hover>
                   <div className="flex items-center gap-4 mb-6">
-                    <motion.img
-                      src={testimonial.avatar}
-                      alt={testimonial.name}
-                      className="w-16 h-16 rounded-full object-cover border-2 border-white/50"
-                      whileHover={{ scale: 1.1 }}
-                    />
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                      {useCase.icon === 'Palette' && <Palette className="w-8 h-8 text-white" />}
+                      {useCase.icon === 'Search' && <Search className="w-8 h-8 text-white" />}
+                      {useCase.icon === 'Heart' && <Heart className="w-8 h-8 text-white" />}
+                    </div>
                     <div>
-                      <h4 className="font-bold text-gray-900">{testimonial.name}</h4>
-                      <p className="text-sm text-gray-600">{testimonial.role}</p>
-                      <p className="text-xs text-gray-500">{testimonial.location}</p>
+                      <h4 className="font-bold text-gray-900 text-lg">{useCase.role}</h4>
                     </div>
                   </div>
-                  
-                  <blockquote className="text-gray-700 italic mb-4 leading-relaxed">
-                    "{testimonial.quote}"
-                  </blockquote>
-                  
-                  <div className="flex gap-1">
-                    {Array.from({ length: testimonial.rating }).map((_, starIdx) => (
-                      <motion.div
-                        key={starIdx}
-                        initial={{ opacity: 0, scale: 0 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 1 + idx * 0.2 + starIdx * 0.1 }}
-                      >
-                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      </motion.div>
-                    ))}
-                  </div>
+
+                  <p className="text-gray-700 leading-relaxed">
+                    {useCase.benefit}
+                  </p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -715,7 +691,7 @@ export default function PremiumLandingPage() {
                 </h2>
                 
                 <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
-                  Join millions of collectors and discover the stories behind your treasures
+                  Join collectors worldwide and discover the stories behind your treasures
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">

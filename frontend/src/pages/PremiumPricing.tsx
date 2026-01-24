@@ -143,7 +143,7 @@ export default function PremiumPricing() {
     },
     {
       question: 'How accurate is the AI identification?',
-      answer: 'Our AI achieves 99%+ accuracy on common vintage items and 95%+ on rare pieces. We continuously improve our models with user feedback.'
+      answer: 'Our AI provides honest confidence scores with each identification. Accuracy is highest for items with visible brand names, maker\'s marks, or distinctive features. The AI clearly indicates what it knows vs what it\'s inferring.'
     },
     {
       question: 'Can I use this for my business?',
@@ -152,7 +152,7 @@ export default function PremiumPricing() {
   ]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-28 md:pb-8">
       {/* Background */}
       <div className="fixed inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <FloatingParticles 

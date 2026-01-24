@@ -66,7 +66,7 @@ export default function HelpPage() {
       id: '2',
       category: 'identification',
       question: 'How accurate is the AI identification?',
-      answer: 'Our AI has a 99% accuracy rate for identifying vintage and antique items. It has been trained on millions of vintage items and continuously learns from expert feedback to improve its accuracy.'
+      answer: 'Our AI uses advanced vision models to identify vintage and antique items. Accuracy varies by item type - items with visible brand names or maker\'s marks get the most reliable identifications. The AI provides honest confidence scores to indicate how certain it is about each identification.'
     },
     {
       id: '3',
@@ -182,9 +182,9 @@ export default function HelpPage() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-28 md:pb-8">
       <AnimatedBackground variant="cool" />
-      
+
       {/* Header */}
       <div className="relative z-10 p-4">
         <GlassCard className="p-4" blur="lg">

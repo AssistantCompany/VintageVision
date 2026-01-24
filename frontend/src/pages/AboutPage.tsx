@@ -80,12 +80,12 @@ export default function AboutPage() {
     {
       year: 'Q1 2025',
       title: 'AI Model Launch',
-      description: 'Released groundbreaking computer vision model with 99% accuracy'
+      description: 'Launched GPT-4 Vision powered analysis with honest confidence scoring'
     },
     {
       year: 'Q2 2025',
-      title: '1M+ Identifications',
-      description: 'Reached major milestone of 1 million successful identifications'
+      title: 'Beta Launch',
+      description: 'Opened beta access for vintage collectors and antique enthusiasts'
     },
     {
       year: 'Q3 2025',
@@ -123,7 +123,7 @@ export default function AboutPage() {
   ]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-28 md:pb-8">
       <AnimatedBackground variant="cool" />
       <FloatingParticles count={50} className="opacity-20" />
       
@@ -163,8 +163,8 @@ export default function AboutPage() {
             </h1>
             
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              We're on a mission to make antique expertise accessible to everyone through the power of AI, 
-              helping millions discover the stories behind their treasures.
+              We're on a mission to make antique expertise accessible to everyone through the power of AI,
+              helping people everywhere discover the stories behind their treasures.
             </p>
           </motion.div>
         </div>

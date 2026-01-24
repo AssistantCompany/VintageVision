@@ -34,10 +34,10 @@ export default function FeaturesPage() {
       title: 'AI-Powered Identification',
       description: 'Advanced computer vision and machine learning algorithms trained on millions of vintage items',
       features: [
-        '99% accuracy rate for vintage items',
+        'GPT-4 Vision powered analysis',
         'Recognizes 150+ style periods',
-        'Identifies maker marks and signatures',
-        'Continuous learning and improvement'
+        'Reads visible text and maker marks',
+        'Honest confidence scoring'
       ],
       gradient: 'from-blue-500 to-cyan-500'
     },
@@ -167,9 +167,9 @@ export default function FeaturesPage() {
   ]
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-28 md:pb-8">
       <AnimatedBackground variant="default" />
-      
+
       {/* Header */}
       <div className="relative z-10 p-4">
         <GlassCard className="p-4" blur="lg">
