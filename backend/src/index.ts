@@ -51,6 +51,8 @@ import feedbackRoutes from './routes/feedback.js';
 import analyticsRoutes from './routes/analytics.js';
 import errorRoutes from './routes/errors.js';
 import imageRoutes from './routes/images.js';
+import testingRoutes from './routes/testing.js';
+import stripeRoutes from './routes/stripe.js';
 
 // Create Hono app
 const app = new Hono();
@@ -297,24 +299,28 @@ app.route('/api/preferences', preferencesRoutes);
 app.route('/api/feedback', feedbackRoutes);
 app.route('/api/analytics', analyticsRoutes);
 app.route('/api/errors', errorRoutes);
+app.route('/api/testing', testingRoutes);
+app.route('/api', stripeRoutes);
 
 // Image serving route - must be registered directly to handle wildcard paths
 app.get('/api/images/*', async (c) => {
   try {
     // Get the full path after /api/images/
     const fullPath = c.req.path;
-    const path = fullPath.replace('/api/images/', '');
+    const pathAfterImages = fullPath.replace('/api/images/', '');
 
-    if (!path) {
+    if (!pathAfterImages) {
       return c.json({ success: false, error: 'Image path required' }, 400);
     }
 
-    console.log(`📸 Serving image: ${path}`);
+    // Storage keys include 'images/' prefix, so add it back
+    const storageKey = `images/${pathAfterImages}`;
+    console.log(`📸 Serving image: ${storageKey}`);
 
     // Fetch image from MinIO
     const { getImage } = await import('./storage/client.js');
     const { stream } = await import('hono/streaming');
-    const { body, contentType } = await getImage(path);
+    const { body, contentType } = await getImage(storageKey);
 
     // Set headers
     c.header('Content-Type', contentType);
@@ -420,7 +426,7 @@ async function start() {
       console.log(`║  💾 Sessions:   Redis (60-day expiry)            ║`);
       console.log(`║  🗄️  Database:   PostgreSQL (Drizzle ORM)         ║`);
       console.log(`║  📁 Storage:    MinIO (S3-Compatible)            ║`);
-      console.log(`║  🤖 AI:         OpenAI GPT-5.2 Vision            ║`);
+      console.log(`║  🤖 AI:         OpenAI GPT-5.2 Pro               ║`);
       console.log('║                                                   ║');
       console.log('╚═══════════════════════════════════════════════════╝');
       console.log('');

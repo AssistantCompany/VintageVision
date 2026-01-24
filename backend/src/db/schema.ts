@@ -13,6 +13,13 @@ export const users = pgTable('users', {
   displayName: text('display_name'),
   avatarUrl: text('avatar_url'),
   emailVerified: boolean('email_verified').default(false),
+
+  // Subscription fields (Stripe integration)
+  subscriptionTier: text('subscription_tier').default('free').notNull(), // 'free' | 'collector' | 'professional'
+  stripeCustomerId: text('stripe_customer_id'),
+  stripeSubscriptionId: text('stripe_subscription_id'),
+  subscriptionEndsAt: timestamp('subscription_ends_at', { withTimezone: true }),
+
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
