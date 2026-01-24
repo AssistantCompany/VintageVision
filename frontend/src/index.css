@@ -4,7 +4,7 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'DM Sans', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   
   /* Safe area support for iOS devices with notches */
   --safe-area-inset-top: env(safe-area-inset-top, 0px);
