@@ -7,6 +7,7 @@ import PreferencesPage from "@/pages/Preferences";
 import PremiumWishlistPage from "@/components/enhanced/PremiumWishlistPage";
 import PremiumLandingPage from "@/pages/PremiumLandingPage";
 import PremiumPricing from "@/pages/PremiumPricing";
+import PremiumFeatures from "@/pages/PremiumFeatures";
 import LegalPage from "@/pages/Legal";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
@@ -22,6 +23,7 @@ import { ErrorBoundary } from "@/components/enhanced/ErrorBoundary";
 import ErrorReportSystem from "@/components/enhanced/ErrorReportSystem";
 import MobileNavigation from "@/components/mobile/MobileNavigation";
 import { SafeAreaProvider } from "@/components/mobile/SafeAreaProvider";
+import OnboardingWrapper from "@/components/enhanced/OnboardingWrapper";
 
 export default function App() {
   return (
@@ -32,6 +34,7 @@ export default function App() {
           <SeoHead />
           <SkipNavigation />
           <NotificationSystem />
+          <OnboardingWrapper />
           {/* Disabled annoying PWA prompts and accessibility menu */}
           {/* <PWAInstallBanner /> */}
           {/* <PWAEnhancements /> */}
@@ -46,6 +49,7 @@ export default function App() {
           <Route path="/" element={<PremiumLandingPage />} />
           <Route path="/app" element={<PremiumHome />} />
           <Route path="/pricing" element={<PremiumPricing />} />
+          <Route path="/premium" element={<PremiumFeatures />} />
           <Route path="/legal/:type" element={<LegalPage />} />
           <Route path="/privacy" element={<LegalPage />} />
           <Route path="/terms" element={<LegalPage />} />
