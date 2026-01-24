@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/contexts/AuthContext'
-import { 
-  Heart, 
-  Search, 
-  Grid3X3, 
-  List, 
-  Download, 
+import {
+  Heart,
+  Search,
+  Grid3X3,
+  List,
+  Download,
   Trash2,
   Calendar,
   DollarSign,
   Eye,
   Plus,
   ArrowLeft,
-  Star
+  Star,
+  Crown
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PremiumHeader from '@/components/enhanced/PremiumHeader'
@@ -26,6 +27,8 @@ import { useNotifications } from '@/components/enhanced/NotificationSystem'
 import { cn, formatCurrency, formatRelativeTime, trackEvent } from '@/lib/utils'
 import PullToRefresh from '@/components/mobile/PullToRefresh'
 import CollectionItemDetailModal from '@/components/enhanced/CollectionItemDetailModal'
+import { Paywall, CollectionLimitIndicator } from '@/components/premium'
+import { TIER_LIMITS, isCollectionFull, SubscriptionTier } from '@/types'
 
 interface CollectionItem {
   id: string
@@ -51,9 +54,15 @@ export default function PremiumCollectionPage() {
   const [loading, setLoading] = useState(true)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [searchQuery, setSearchQuery] = useState('')
-  
+
   const [sortBy, setSortBy] = useState<'recent' | 'value' | 'name'>('recent')
   const [detailItem, setDetailItem] = useState<CollectionItem | null>(null)
+  const [showPaywall, setShowPaywall] = useState(false)
+
+  // Get user's subscription tier (defaults to 'free' if not set)
+  const userTier: SubscriptionTier = (user as any)?.subscriptionTier || 'free'
+  const collectionLimit = TIER_LIMITS[userTier].collectionItems
+  const isAtLimit = isCollectionFull(userTier, items.length)
 
   useEffect(() => {
     if (user) {
@@ -255,16 +264,36 @@ export default function PremiumCollectionPage() {
             >
               <ArrowLeft className="w-4 h-4" />
             </MagneticButton>
-            
-            <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
-                My Collection
-              </h1>
+
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                  My Collection
+                </h1>
+                {userTier !== 'free' && (
+                  <span className="px-2 py-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                    <Crown className="w-3 h-3" />
+                    {userTier === 'professional' ? 'Pro' : 'Collector'}
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600 mt-1">
                 {items.length} items • Total estimated value: {formatCurrency(totalValue)}
               </p>
             </div>
           </div>
+
+          {/* Collection Limit Indicator for free tier */}
+          {collectionLimit !== Infinity && (
+            <div className="mb-6">
+              <CollectionLimitIndicator
+                currentCount={items.length}
+                maxCount={collectionLimit as number}
+                tier={userTier}
+                onUpgradeClick={() => navigate('/pricing')}
+              />
+            </div>
+          )}
 
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -378,14 +407,20 @@ export default function PremiumCollectionPage() {
                     {searchQuery ? 'No matching items' : 'Start Your Collection'}
                   </h3>
                   <p className="text-gray-600 mb-6">
-                    {searchQuery 
+                    {searchQuery
                       ? 'Try a different search term to find your items.'
                       : 'Identify your first vintage treasure to begin building your collection.'
                     }
                   </p>
                   {!searchQuery && (
                     <LiquidButton
-                      onClick={() => navigate('/')}
+                      onClick={() => {
+                        if (isAtLimit) {
+                          setShowPaywall(true)
+                        } else {
+                          navigate('/')
+                        }
+                      }}
                       variant="primary"
                       size="md"
                     >
@@ -553,6 +588,24 @@ export default function PremiumCollectionPage() {
         onClose={() => setDetailItem(null)}
         onDelete={handleDeleteItem}
         onUpdateNotes={handleUpdateNotes}
+      />
+
+      {/* Paywall Modal for Collection Limit */}
+      <Paywall
+        variant="hard"
+        isModal={true}
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        title="Collection Vault Full"
+        description={`Free accounts can save up to ${TIER_LIMITS.free.collectionItems} items. Upgrade to unlock unlimited collection storage.`}
+        featurePreset="collection"
+        recommendedTier="collector"
+        ctaText="Unlock Unlimited Storage"
+        currentTier={userTier}
+        onUpgradeClick={() => {
+          setShowPaywall(false)
+          navigate('/pricing')
+        }}
       />
     </div>
   )
