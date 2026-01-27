@@ -13,6 +13,8 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger as honoLogger } from 'hono/logger';
 import { compress } from 'hono/compress';
+import { secureHeaders } from 'hono/secure-headers';
+import { rateLimiter } from 'hono-rate-limiter';
 import { setCookie, deleteCookie, getCookie } from 'hono/cookie';
 import crypto from 'crypto';
 import { env } from './config/env.js';
@@ -80,6 +82,25 @@ app.use('*', cors({
   maxAge: 86400,
 }));
 
+// Security headers middleware
+// Note: contentSecurityPolicy is not set (disabled) as it needs careful configuration
+app.use('*', secureHeaders());
+
+// Rate limiting for expensive endpoints (analyze)
+const analyzeRateLimiter = rateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  limit: 10, // 10 requests per minute
+  standardHeaders: 'draft-6',
+  keyGenerator: (c) => {
+    // Use session cookie or IP address as key
+    const sessionCookie = c.req.header('Cookie')?.match(/session=([^;]+)/)?.[1];
+    return sessionCookie || c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'anonymous';
+  },
+});
+
+// Apply rate limiting to analyze endpoints
+app.use('/api/analyze/*', analyzeRateLimiter);
+
 // Health check endpoint
 app.get('/health', async (c) => {
   const dbHealthy = await checkDatabaseHealth();
@@ -111,8 +132,14 @@ app.get('/health', async (c) => {
 /**
  * Debug endpoint - shows exactly what redirect_uri we're using
  * Visit /api/auth/debug to see the configuration
+ * SECURITY: Disabled in production to prevent information disclosure
  */
 app.get('/api/auth/debug', (c) => {
+  // Block in production
+  if (env.NODE_ENV === 'production') {
+    return c.json({ error: 'Debug endpoint disabled in production' }, 403);
+  }
+
   return c.json({
     message: 'OAuth Debug Information',
     redirect_uri: OAUTH_REDIRECT_URI,

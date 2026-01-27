@@ -5,7 +5,10 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { requireAuth, optionalAuth, getUserId } from '../middleware/auth.js';
 import { ValidationError, ExternalServiceError } from '../middleware/error.js';
-import { analyzeAntiqueImage, generateMarketplaceLinks, ProductCategory, DomainExpert, AnalysisEventEmitter } from '../services/openai.js';
+import { analyzeAntiqueImage, generateMarketplaceLinks, ProductCategory, DomainExpert, AnalysisEventEmitter, CapturedImage, ImageRole } from '../services/openai.js';
+import { analyzeWithConsensus, evaluateConsensusTriggers, ConsensusConfig } from '../services/consensusAnalysis.js';
+import { createInteractiveSession, addUserResponse, updateWithReanalysis, detectInformationNeeds, generateAIVeraResponse, ASSISTANT_NAME, ASSISTANT_PERSONA, InteractiveSession } from '../services/interactiveAnalysis.js';
+import { evaluateEscalation, getEscalationOptions } from '../services/expertEscalation.js';
 import { uploadImage, getImageUrl } from '../storage/client.js';
 import { db } from '../db/client.js';
 import { itemAnalyses, marketplaceLinks, analyticsEvents } from '../db/schema.js';
@@ -14,11 +17,23 @@ import { z } from 'zod';
 
 const analyze = new Hono();
 
-// Request validation schema - now includes asking price
+// Additional image schema for multi-image analysis
+const AdditionalImageSchema = z.object({
+  role: z.enum(['overview', 'detail', 'marks', 'underside', 'damage', 'context', 'additional']),
+  dataUrl: z.string().min(1),
+});
+
+// Request validation schema - now includes asking price, multi-image, and consensus support
 const AnalyzeRequestSchema = z.object({
   image: z.string().min(1, 'Image data is required'),
   askingPrice: z.number().positive().optional(), // Price in cents
   additionalContext: z.string().optional(), // User notes
+  additionalImages: z.array(AdditionalImageSchema).optional(), // Multi-image capture
+  multiImageAnalysis: z.boolean().optional(), // Flag for world-class analysis
+  // Consensus analysis options
+  consensusMode: z.enum(['auto', 'always', 'never']).optional().default('auto'), // 'auto' = conditional based on triggers
+  forceMultiRun: z.boolean().optional(), // Force multiple runs regardless of triggers
+  useReasoningModel: z.boolean().optional().default(true), // Use o1/o1-pro for synthesis
 });
 
 // POST /api/analyze - Analyze item with world-class identification
@@ -28,9 +43,22 @@ analyze.post('/', optionalAuth, async (c) => {
     const body = await c.req.json();
 
     // Validate request
-    const { image: imageData, askingPrice, additionalContext } = AnalyzeRequestSchema.parse(body);
+    const {
+      image: imageData,
+      askingPrice,
+      additionalContext,
+      additionalImages,
+      multiImageAnalysis,
+      consensusMode = 'auto',
+      forceMultiRun = false,
+      useReasoningModel = true,
+    } = AnalyzeRequestSchema.parse(body);
 
-    console.log(`🔍 Analysis request from user: ${userId || 'anonymous'}`);
+    const isMultiImage = multiImageAnalysis && additionalImages && additionalImages.length > 0;
+    console.log(`🔍 Analysis request from user: ${userId || 'anonymous'} (${isMultiImage ? 'multi-image' : 'single-image'})`);
+    if (isMultiImage) {
+      console.log(`📸 Additional images: ${additionalImages.length} (roles: ${additionalImages.map(i => i.role).join(', ')})`);
+    }
     if (askingPrice) {
       console.log(`💰 Asking price provided: $${askingPrice / 100}`);
     }
@@ -69,8 +97,49 @@ analyze.post('/', optionalAuth, async (c) => {
     // imageKey already includes "images/" prefix, so we just need /api/
     const imageUrl = `/api/${imageKey}`;
 
+    // Build image array for multi-image analysis
+    let analysisInput: string | CapturedImage[];
+    if (isMultiImage && additionalImages) {
+      // Multi-image analysis: create CapturedImage array
+      const capturedImages: CapturedImage[] = [
+        {
+          id: 'primary',
+          dataUrl: imageData,
+          role: 'overview' as ImageRole,
+          label: 'Overview'
+        },
+        ...additionalImages.map((img, idx) => ({
+          id: `additional-${idx}`,
+          dataUrl: img.dataUrl,
+          role: img.role as ImageRole,
+          label: img.role.charAt(0).toUpperCase() + img.role.slice(1).replace('_', ' ')
+        }))
+      ];
+      analysisInput = capturedImages;
+      console.log(`🔬 Starting world-class multi-image analysis with ${capturedImages.length} images`);
+    } else {
+      // Single image analysis
+      analysisInput = imageData;
+    }
+
     // Analyze with World-Class Identification System
-    const analysisResult = await analyzeAntiqueImage(imageData, askingPrice);
+    // Use consensus analysis for auto/always modes, direct analysis for never
+    let analysisResult;
+    if (consensusMode === 'never') {
+      // Direct single-run analysis
+      console.log('🎯 Consensus mode: DISABLED - using single-run analysis');
+      analysisResult = await analyzeAntiqueImage(analysisInput, askingPrice);
+    } else {
+      // Consensus analysis (auto or always)
+      console.log(`🎯 Consensus mode: ${consensusMode.toUpperCase()} - using conditional multi-run consensus`);
+      analysisResult = await analyzeWithConsensus(analysisInput, askingPrice, {
+        forceMultiRun: forceMultiRun || consensusMode === 'always',
+        config: {
+          useReasoningModel,
+          reasoningModel: 'o1', // OpenAI's reasoning model for synthesis
+        },
+      });
+    }
 
     // Save analysis to database with ALL world-class fields
     const [savedAnalysis] = await db
@@ -226,6 +295,11 @@ analyze.post('/', optionalAuth, async (c) => {
         expertReferralRecommended: analysisResult.expertReferralRecommended,
         expertReferralReason: analysisResult.expertReferralReason,
         authenticationAssessment: analysisResult.authenticationAssessment,
+        // World-class analysis fields
+        visualMarkers: analysisResult.visualMarkers || [],
+        knowledgeState: analysisResult.knowledgeState || null,
+        itemAuthentication: analysisResult.itemAuthentication || null,
+        suggestedCaptures: analysisResult.suggestedCaptures || [],
       },
     });
   } catch (error) {
@@ -242,9 +316,10 @@ analyze.post('/stream', optionalAuth, async (c) => {
 
   try {
     const body = await c.req.json();
-    const { image: imageData, askingPrice } = AnalyzeRequestSchema.parse(body);
+    const { image: imageData, askingPrice, additionalImages, multiImageAnalysis } = AnalyzeRequestSchema.parse(body);
+    const isMultiImage = multiImageAnalysis && additionalImages && additionalImages.length > 0;
 
-    console.log(`🔍 Streaming analysis request from user: ${userId || 'anonymous'}`);
+    console.log(`🔍 Streaming analysis request from user: ${userId || 'anonymous'} (${isMultiImage ? 'multi-image' : 'single-image'})`);
 
     // Validate image format
     if (!imageData.startsWith('data:image/')) {
@@ -276,6 +351,23 @@ analyze.post('/stream', optionalAuth, async (c) => {
     // imageKey already includes "images/" prefix, so we just need /api/
     const imageUrl = `/api/${imageKey}`;
 
+    // Build analysis input for multi-image support
+    let analysisInput: string | CapturedImage[];
+    if (isMultiImage && additionalImages) {
+      const capturedImages: CapturedImage[] = [
+        { id: 'primary', dataUrl: imageData, role: 'overview' as ImageRole, label: 'Overview' },
+        ...additionalImages.map((img, idx) => ({
+          id: `additional-${idx}`,
+          dataUrl: img.dataUrl,
+          role: img.role as ImageRole,
+          label: img.role.charAt(0).toUpperCase() + img.role.slice(1).replace('_', ' ')
+        }))
+      ];
+      analysisInput = capturedImages;
+    } else {
+      analysisInput = imageData;
+    }
+
     // Return SSE stream
     return streamSSE(c, async (stream) => {
       let analysisResult: Awaited<ReturnType<typeof analyzeAntiqueImage>> | null = null;
@@ -293,12 +385,12 @@ analyze.post('/stream', optionalAuth, async (c) => {
         await emitEvent({
           type: 'stage:start',
           stage: 'upload',
-          message: 'Image uploaded successfully',
+          message: isMultiImage ? `${additionalImages!.length + 1} images uploaded` : 'Image uploaded successfully',
           progress: 5,
         });
 
-        // Run analysis with event emitter
-        analysisResult = await analyzeAntiqueImage(imageData, askingPrice, emitEvent);
+        // Run analysis with event emitter (supports multi-image)
+        analysisResult = await analyzeAntiqueImage(analysisInput, askingPrice, emitEvent);
 
         // Save to database
         const [savedAnalysis] = await db
@@ -377,11 +469,16 @@ analyze.post('/stream', optionalAuth, async (c) => {
           );
         }
 
-        // Send final complete event with full data
+        // Send final complete event with full data including world-class fields
         const completeData = {
           ...savedAnalysis,
           imageUrl,
           marketplaceLinks: marketplaceSearchLinks,
+          // World-class analysis fields
+          visualMarkers: analysisResult!.visualMarkers || [],
+          knowledgeState: analysisResult!.knowledgeState || null,
+          itemAuthentication: analysisResult!.itemAuthentication || null,
+          suggestedCaptures: analysisResult!.suggestedCaptures || [],
         };
         console.log(`🖼️ Image URL being sent: ${completeData.imageUrl}`);
 
@@ -445,6 +542,280 @@ analyze.get('/:id', optionalAuth, async (c) => {
         ...analysis,
         imageUrl,
         marketplaceLinks: links,
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+});
+
+// ============================================================================
+// VERA INTERACTIVE SESSION ENDPOINTS
+// ============================================================================
+
+// In-memory session store (would be Redis in production)
+const interactiveSessions = new Map<string, InteractiveSession>();
+
+// GET /api/analyze/vera/info - Get Vera assistant information
+analyze.get('/vera/info', (c) => {
+  return c.json({
+    success: true,
+    data: {
+      assistantName: ASSISTANT_NAME,
+      title: ASSISTANT_PERSONA.title,
+      greeting: ASSISTANT_PERSONA.greeting,
+      style: ASSISTANT_PERSONA.style,
+      expertise: ASSISTANT_PERSONA.expertise,
+    },
+  });
+});
+
+// POST /api/analyze/:id/interactive - Start interactive session for an analysis
+analyze.post('/:id/interactive', optionalAuth, async (c) => {
+  try {
+    const analysisId = c.req.param('id');
+
+    // Get the existing analysis
+    const [analysis] = await db
+      .select()
+      .from(itemAnalyses)
+      .where(eq(itemAnalyses.id, analysisId))
+      .limit(1);
+
+    if (!analysis) {
+      return c.json({ success: false, error: 'Analysis not found' }, 404);
+    }
+
+    // Convert DB record to ItemAnalysis format
+    const itemAnalysis = {
+      name: analysis.name,
+      maker: analysis.maker,
+      confidence: analysis.confidence,
+      estimatedValueMin: analysis.estimatedValueMin,
+      estimatedValueMax: analysis.estimatedValueMax,
+      domainExpert: analysis.domainExpert,
+      authenticityRisk: analysis.authenticityRisk as 'low' | 'medium' | 'high' | 'very_high' | undefined,
+      expertReferralRecommended: analysis.expertReferralRecommended,
+      expertReferralReason: analysis.expertReferralReason,
+      condition: null,
+      datingConfidence: analysis.identificationConfidence,
+      marketConfidence: analysis.confidence,
+      era: analysis.era,
+      description: analysis.description,
+    };
+
+    // Create interactive session
+    const session = createInteractiveSession(analysisId, itemAnalysis as any);
+
+    // Store session
+    interactiveSessions.set(session.id, session);
+
+    // Get escalation options
+    const escalation = getEscalationOptions(itemAnalysis as any);
+
+    console.log(`🤖 Vera session started: ${session.id} for analysis ${analysisId}`);
+    console.log(`   Initial confidence: ${(itemAnalysis.confidence * 100).toFixed(0)}%`);
+    console.log(`   Information needs: ${session.informationNeeds.length}`);
+
+    return c.json({
+      success: true,
+      data: {
+        session,
+        escalation,
+        assistantName: ASSISTANT_NAME,
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
+});
+
+// GET /api/analyze/interactive/:sessionId - Get interactive session
+analyze.get('/interactive/:sessionId', optionalAuth, async (c) => {
+  const sessionId = c.req.param('sessionId');
+  const session = interactiveSessions.get(sessionId);
+
+  if (!session) {
+    return c.json({ success: false, error: 'Session not found' }, 404);
+  }
+
+  return c.json({
+    success: true,
+    data: session,
+  });
+});
+
+// POST /api/analyze/interactive/:sessionId/respond - Add user response to session
+analyze.post('/interactive/:sessionId/respond', optionalAuth, async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId');
+    const session = interactiveSessions.get(sessionId);
+
+    if (!session) {
+      return c.json({ success: false, error: 'Session not found' }, 404);
+    }
+
+    const body = await c.req.json();
+    const { needId, type, content } = z.object({
+      needId: z.string(),
+      type: z.enum(['photo', 'text', 'measurement', 'document']),
+      content: z.string(),
+    }).parse(body);
+
+    console.log(`📝 Vera received ${type} response for need ${needId}`);
+
+    // Add user's message to conversation history
+    session.collectedResponses.push({
+      needId,
+      type: type as 'photo' | 'text' | 'measurement' | 'document',
+      content,
+      providedAt: new Date().toISOString(),
+    });
+
+    session.conversationHistory.push({
+      role: 'user',
+      content: type === 'photo' ? '[Photo provided]' : content,
+      timestamp: new Date().toISOString(),
+      relatedNeedId: needId,
+    });
+
+    // Generate AI-powered response from Vera
+    const aiResponse = await generateAIVeraResponse(
+      session,
+      type === 'photo' ? 'User provided an additional photo for analysis.' : content,
+      type as 'photo' | 'text'
+    );
+
+    // Add Vera's AI response to conversation
+    session.conversationHistory.push(aiResponse);
+
+    // Check if we should move to processing status
+    const criticalNeeds = session.informationNeeds.filter(n => n.priority === 'critical');
+    const answeredCritical = criticalNeeds.filter(
+      n => session.collectedResponses.some(r => r.needId === n.id)
+    );
+    if (answeredCritical.length === criticalNeeds.length && session.collectedResponses.length >= 2) {
+      session.status = 'processing';
+    }
+
+    session.updatedAt = new Date().toISOString();
+    interactiveSessions.set(sessionId, session);
+
+    console.log(`   Session status: ${session.status}`);
+    console.log(`   Vera AI response generated`);
+
+    return c.json({
+      success: true,
+      data: {
+        session: session,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      throw new ValidationError(error.errors[0]?.message || 'Invalid request data');
+    }
+    throw error;
+  }
+});
+
+// POST /api/analyze/interactive/:sessionId/reanalyze - Trigger reanalysis with collected info
+analyze.post('/interactive/:sessionId/reanalyze', optionalAuth, async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId');
+    const session = interactiveSessions.get(sessionId);
+
+    if (!session) {
+      return c.json({ success: false, error: 'Session not found' }, 404);
+    }
+
+    if (session.collectedResponses.length === 0) {
+      return c.json({ success: false, error: 'No additional information provided' }, 400);
+    }
+
+    console.log(`🔄 Reanalyzing with ${session.collectedResponses.length} additional inputs`);
+
+    // Get original analysis
+    const [originalAnalysis] = await db
+      .select()
+      .from(itemAnalyses)
+      .where(eq(itemAnalyses.id, session.analysisId))
+      .limit(1);
+
+    if (!originalAnalysis) {
+      return c.json({ success: false, error: 'Original analysis not found' }, 404);
+    }
+
+    // Build enhanced context from collected responses
+    const additionalContext = session.collectedResponses
+      .filter(r => r.type === 'text')
+      .map(r => r.content)
+      .join('\n');
+
+    // Collect additional photos
+    const additionalPhotos = session.collectedResponses
+      .filter(r => r.type === 'photo')
+      .map((r, idx) => ({
+        id: `interactive-${idx}`,
+        dataUrl: r.content,
+        role: 'detail' as ImageRole,
+        label: `Interactive Photo ${idx + 1}`,
+      }));
+
+    // Build input for reanalysis
+    let analysisInput: string | CapturedImage[];
+    if (additionalPhotos.length > 0 && originalAnalysis.imageUrl) {
+      // Multi-image with new photos
+      const primaryImageUrl = await getImageUrl(originalAnalysis.imageUrl);
+      // For reanalysis, we'd need to fetch the original image
+      // For now, use the additional photos
+      analysisInput = additionalPhotos;
+    } else {
+      // Text-only enhancement - use original image key
+      const imageUrl = await getImageUrl(originalAnalysis.imageUrl);
+      analysisInput = imageUrl;
+    }
+
+    // Run enhanced analysis with consensus for better accuracy
+    const newAnalysis = await analyzeWithConsensus(
+      analysisInput,
+      originalAnalysis.askingPrice ?? undefined,
+      {
+        forceMultiRun: true,
+        config: { useReasoningModel: true },
+      }
+    );
+
+    // Update session with new analysis
+    const updatedSession = updateWithReanalysis(session, newAnalysis);
+    interactiveSessions.set(sessionId, updatedSession);
+
+    // Update database record
+    await db
+      .update(itemAnalyses)
+      .set({
+        name: newAnalysis.name,
+        maker: newAnalysis.maker || null,
+        confidence: newAnalysis.confidence,
+        description: newAnalysis.description,
+        authenticityRisk: newAnalysis.authenticityRisk || null,
+        authenticationConfidence: newAnalysis.authenticationConfidence || null,
+        estimatedValueMin: newAnalysis.estimatedValueMin || null,
+        estimatedValueMax: newAnalysis.estimatedValueMax || null,
+      })
+      .where(eq(itemAnalyses.id, session.analysisId));
+
+    console.log(`✅ Reanalysis complete`);
+    console.log(`   New confidence: ${(newAnalysis.confidence * 100).toFixed(0)}%`);
+
+    // Get updated escalation options
+    const escalation = getEscalationOptions(newAnalysis);
+
+    return c.json({
+      success: true,
+      data: {
+        session: updatedSession,
+        newAnalysis,
+        escalation,
       },
     });
   } catch (error) {

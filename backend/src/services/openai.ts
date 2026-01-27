@@ -1,11 +1,31 @@
-// OpenAI Service - World-Class Treasure Hunting Intelligence System
-// January 2026 - Multi-Domain Expert System with Deal Analysis
-// VintageVision v5.0 - Upgraded to GPT-5.2 for best-in-class vision capabilities
+// OpenAI Service - World-Class Treasure Hunting Intelligence System v2.0
+// VintageVision - Multi-Image, Honest Confidence, Visual Evidence
+// January 2026 - Complete Overhaul for Production Quality
+// v2.1 - Self-Learning Integration
 
 import OpenAI from 'openai';
 import { env } from '../config/env.js';
 import { ExternalServiceError, ValidationError } from '../middleware/error.js';
 import { z } from 'zod';
+import {
+  getPromptEnhancements,
+  getConfusionWarnings,
+  recordGroundTruthResult
+} from './selfLearning.js';
+
+import {
+  getEnhancedDomainPrompt,
+  getMakerByName,
+  getIdentificationPattern,
+  getAuthenticationCriteria,
+  MAKER_MARKS_DATABASE,
+  IDENTIFICATION_PATTERNS,
+} from './expertKnowledgeBase.js';
+
+import {
+  searchAllAuctionDatabases,
+  calculatePriceRange,
+} from './marketData.js';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -13,30 +33,101 @@ const openai = new OpenAI({
 });
 
 // ============================================================================
-// MODEL CONFIGURATION - GPT-5.2 for best multimodal performance
-// Released December 11, 2025 - Strongest vision model, 400K context
+// MODEL CONFIGURATION
 // ============================================================================
-const VISION_MODEL = 'gpt-5.2'; // GPT-5.2 Thinking - best for structured analysis & vision
-const TEXT_MODEL = 'gpt-5.2';   // GPT-5.2 for text-only tasks
+const VISION_MODEL = 'gpt-4o'; // Best vision + reasoning for chat completions
+const TEXT_MODEL = 'gpt-4o';
 
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
 
-/**
- * Safely parse JSON with error handling
- * @throws ExternalServiceError if parsing fails
- */
 function safeJsonParse(content: string, stage: string): unknown {
   try {
-    return JSON.parse(content);
+    // Handle potential markdown code blocks
+    let cleanContent = content.trim();
+    if (cleanContent.startsWith('```json')) {
+      cleanContent = cleanContent.slice(7);
+    } else if (cleanContent.startsWith('```')) {
+      cleanContent = cleanContent.slice(3);
+    }
+    if (cleanContent.endsWith('```')) {
+      cleanContent = cleanContent.slice(0, -3);
+    }
+    cleanContent = cleanContent.trim();
+
+    // First try direct parse
+    try {
+      return JSON.parse(cleanContent);
+    } catch {
+      // Try to repair truncated JSON by closing open brackets
+      let repaired = cleanContent;
+
+      // Count unclosed brackets (simple heuristic)
+      let openBraces = 0;
+      let openBrackets = 0;
+      let inString = false;
+      let escaped = false;
+
+      for (const char of repaired) {
+        if (escaped) {
+          escaped = false;
+          continue;
+        }
+        if (char === '\\') {
+          escaped = true;
+          continue;
+        }
+        if (char === '"') {
+          inString = !inString;
+          continue;
+        }
+        if (!inString) {
+          if (char === '{') openBraces++;
+          else if (char === '}') openBraces--;
+          else if (char === '[') openBrackets++;
+          else if (char === ']') openBrackets--;
+        }
+      }
+
+      // If we're in a string, close it
+      if (inString) {
+        repaired += '"';
+      }
+
+      // Remove trailing comma if present
+      repaired = repaired.replace(/,\s*$/, '');
+
+      // Close any unclosed arrays and objects
+      while (openBrackets > 0) {
+        repaired += ']';
+        openBrackets--;
+      }
+      while (openBraces > 0) {
+        repaired += '}';
+        openBraces--;
+      }
+
+      // Try parsing the repaired JSON
+      console.log(`⚠️ Repaired truncated JSON in ${stage}`);
+      return JSON.parse(repaired);
+    }
   } catch (error) {
-    console.error(`❌ JSON parse error in ${stage}:`, content.substring(0, 200));
+    console.error(`❌ JSON parse error in ${stage}:`, content.substring(0, 500));
     throw new ExternalServiceError(
-      `Failed to parse ${stage} response as JSON. The AI may have returned malformed data.`,
+      `Failed to parse ${stage} response as JSON`,
       'OpenAI'
     );
   }
+}
+
+// Humanize prices to avoid fake precision
+function humanizePrice(price: number): number {
+  if (price < 100) return Math.round(price / 10) * 10;
+  if (price < 1000) return Math.round(price / 50) * 50;
+  if (price < 10000) return Math.round(price / 100) * 100;
+  if (price < 100000) return Math.round(price / 500) * 500;
+  return Math.round(price / 1000) * 1000;
 }
 
 // ============================================================================
@@ -46,34 +137,109 @@ function safeJsonParse(content: string, stage: string): unknown {
 export type ProductCategory = 'antique' | 'vintage' | 'modern_branded' | 'modern_generic';
 
 export type DomainExpert =
-  | 'furniture'
-  | 'ceramics'
-  | 'glass'
-  | 'silver'
-  | 'jewelry'
-  | 'watches'
-  | 'art'
-  | 'textiles'
-  | 'toys'
-  | 'books'
-  | 'tools'
-  | 'lighting'
-  | 'electronics'
-  | 'vehicles'
-  | 'general';
+  | 'furniture' | 'ceramics' | 'glass' | 'silver' | 'jewelry' | 'watches'
+  | 'art' | 'textiles' | 'toys' | 'books' | 'tools' | 'lighting'
+  | 'electronics' | 'vehicles' | 'general';
 
 export type DealRating = 'exceptional' | 'good' | 'fair' | 'overpriced';
 export type FlipDifficulty = 'easy' | 'moderate' | 'hard' | 'very_hard';
 export type AuthenticityRisk = 'low' | 'medium' | 'high' | 'very_high';
-export type AuthCheckCategory = 'visual' | 'physical' | 'documentation' | 'provenance';
-export type AuthCheckPriority = 'critical' | 'important' | 'helpful';
-export type PhotoRequestPriority = 'required' | 'recommended' | 'optional';
+export type ImageRole = 'overview' | 'detail' | 'marks' | 'underside' | 'damage' | 'context' | 'additional';
+
+// Image input for multi-image analysis
+export interface CapturedImage {
+  id: string;
+  dataUrl: string;
+  role: ImageRole;
+  label: string;
+}
 
 // ============================================================================
-// SCHEMA DEFINITIONS
+// SCHEMA DEFINITIONS - ENHANCED FOR HONEST CONFIDENCE
 // ============================================================================
 
-// Stage 1: Triage Schema
+// Knowledge State Schema - What we know vs what we need
+const ConfirmedFactSchema = z.object({
+  statement: z.string(),
+  evidence: z.string(),
+  confidence: z.number().min(0.9).max(1),
+});
+
+const ProbableFactSchema = z.object({
+  statement: z.string(),
+  evidence: z.string(),
+  confidence: z.number().min(0.5).max(0.89),
+  howToConfirm: z.string(),
+});
+
+const VerificationNeedSchema = z.object({
+  question: z.string(),
+  photoNeeded: z.string(),
+  importance: z.enum(['critical', 'important', 'helpful']),
+  impactOnValue: z.string(),
+});
+
+const KnowledgeStateSchema = z.object({
+  confirmed: z.array(ConfirmedFactSchema),
+  probable: z.array(ProbableFactSchema),
+  needsVerification: z.array(VerificationNeedSchema),
+  completeness: z.number().min(0).max(1),
+});
+
+// Visual Marker Schema - Bounding boxes for evidence
+const BoundingBoxSchema = z.object({
+  x: z.number().min(0).max(100),
+  y: z.number().min(0).max(100),
+  width: z.number().min(0).max(100),
+  height: z.number().min(0).max(100),
+});
+
+const VisualMarkerSchema = z.object({
+  id: z.string(),
+  imageId: z.string(),
+  type: z.enum(['maker_mark', 'text', 'construction', 'damage', 'feature', 'red_flag', 'authentication']),
+  bbox: BoundingBoxSchema,
+  label: z.string(),
+  finding: z.string(),
+  confidence: z.number().min(0).max(1),
+  isPositive: z.boolean(),
+});
+
+// Authentication Finding Schema - Item-specific, not generic
+const AuthenticationFindingSchema = z.object({
+  id: z.string(),
+  area: z.string(),
+  observation: z.string(),
+  expectedFor: z.string(),
+  status: z.enum(['pass', 'fail', 'inconclusive', 'needs_verification']),
+  confidence: z.number().min(0).max(1),
+  explanation: z.string(),
+  imageId: z.string().optional(),
+});
+
+const ItemAuthenticationSchema = z.object({
+  overallVerdict: z.enum(['likely_authentic', 'likely_fake', 'inconclusive', 'needs_expert']),
+  confidenceScore: z.number().min(0).max(1),
+  findings: z.array(AuthenticationFindingSchema),
+  passedChecks: z.number(),
+  failedChecks: z.number(),
+  inconclusiveChecks: z.number(),
+  criticalIssues: z.array(z.string()),
+  recommendation: z.string(),
+  expertNeeded: z.boolean(),
+  expertType: z.string().optional(),
+});
+
+// Suggested Capture Schema - What photos would improve analysis
+const CaptureRequestSchema = z.object({
+  role: z.enum(['overview', 'detail', 'marks', 'underside', 'damage', 'context', 'additional']),
+  priority: z.enum(['required', 'recommended', 'optional']),
+  label: z.string(),
+  instruction: z.string(),
+  targetArea: z.string().optional(),
+});
+
+// Triage Schema
 const TriageSchema = z.object({
   category: z.enum(['antique', 'vintage', 'modern_branded', 'modern_generic']),
   domainExpert: z.enum([
@@ -87,119 +253,10 @@ const TriageSchema = z.object({
   confidence: z.number().min(0).max(1),
   reasoning: z.string(),
   visibleBranding: z.string().nullable(),
-  visibleModelNumber: z.string().nullable().optional(),
   allVisibleText: z.array(z.string()).optional(),
 });
 
-// Evidence extraction schema
-const EvidenceSchema = z.object({
-  visibleText: z.array(z.object({
-    text: z.string(),
-    location: z.string(),
-    type: z.enum([
-      // Antique/collectible identifiers
-      'maker_mark', 'model_number', 'label', 'signature', 'stamp',
-      // Book/publication identifiers
-      'title', 'author', 'publisher', 'isbn', 'edition',
-      // Vehicle identifiers
-      'vin', 'license_plate', 'engine_number',
-      // Electronics identifiers
-      'serial_number', 'barcode', 'upc', 'sku',
-      // Art identifiers
-      'artist_signature', 'gallery_label', 'provenance_label',
-      // General
-      'date', 'price_tag', 'inventory_number', 'other'
-    ]),
-    confidence: z.number(),
-  })),
-  makerIndicators: z.object({
-    makerName: z.string().nullable(),
-    markType: z.string().nullable(),
-    markLocation: z.string().nullable(),
-    confidence: z.number(),
-  }),
-  construction: z.object({
-    materials: z.array(z.string()),
-    techniques: z.array(z.string()),
-    qualityIndicators: z.array(z.string()),
-    ageIndicators: z.array(z.string()),
-  }),
-  condition: z.object({
-    overall: z.enum(['mint', 'excellent', 'good', 'fair', 'poor']),
-    issues: z.array(z.string()),
-    restorations: z.array(z.string()),
-    originalityNotes: z.array(z.string()),
-  }),
-  distinctiveFeatures: z.array(z.string()),
-  redFlags: z.array(z.string()),
-});
-
-// Candidate schema
-const CandidateSchema = z.object({
-  rank: z.number(),
-  identification: z.string(),
-  maker: z.string().nullable(),
-  model: z.string().nullable(),
-  period: z.string().nullable(),
-  confidence: z.number(),
-  evidenceFor: z.array(z.string()),
-  evidenceAgainst: z.array(z.string()),
-  valueEstimate: z.object({
-    low: z.number().nullable(),
-    high: z.number().nullable(),
-    basis: z.string(),
-  }),
-});
-
-// Comparable sale schema
-const ComparableSaleSchema = z.object({
-  description: z.string(),
-  venue: z.string(),
-  price: z.number(),
-  date: z.string(),
-  condition: z.string(),
-  relevance: z.string(),
-});
-
-// Authentication check schema
-const AuthenticationCheckSchema = z.object({
-  id: z.string(),
-  category: z.enum(['visual', 'physical', 'documentation', 'provenance']),
-  priority: z.enum(['critical', 'important', 'helpful']),
-  check: z.string(),
-  howTo: z.string(),
-  whatToLookFor: z.string(),
-  redFlagSigns: z.array(z.string()),
-  requiresExpert: z.boolean(),
-  photoHelpful: z.boolean(),
-});
-
-// Photo request schema
-const PhotoRequestSchema = z.object({
-  id: z.string(),
-  area: z.string(),
-  reason: z.string(),
-  whatToCapture: z.string(),
-  priority: z.enum(['required', 'recommended', 'optional']),
-});
-
-// Authentication analysis schema
-const AuthenticationAnalysisSchema = z.object({
-  authenticationConfidence: z.number().min(0).max(1),
-  authenticityRisk: z.enum(['low', 'medium', 'high', 'very_high']),
-  checklist: z.array(AuthenticationCheckSchema),
-  knownFakeIndicators: z.array(z.string()),
-  photosRequested: z.array(PhotoRequestSchema),
-  expertReferralRecommended: z.boolean(),
-  expertReferralReason: z.string().nullable(),
-  overallAssessment: z.string(),
-});
-
-export type AuthenticationCheck = z.infer<typeof AuthenticationCheckSchema>;
-export type PhotoRequest = z.infer<typeof PhotoRequestSchema>;
-export type AuthenticationAnalysis = z.infer<typeof AuthenticationAnalysisSchema>;
-
-// Final analysis result schema (World-Class)
+// Complete Analysis Schema
 const WorldClassAnalysisSchema = z.object({
   // Core identification
   name: z.string().min(1),
@@ -224,760 +281,540 @@ const WorldClassAnalysisSchema = z.object({
   historicalContext: z.string().min(10),
   attributionNotes: z.string().nullable().optional(),
 
-  // Valuation
-  estimatedValueMin: z.number().nonnegative().nullable().optional().transform(v => v ? Math.round(v) : v),
-  estimatedValueMax: z.number().nonnegative().nullable().optional().transform(v => v ? Math.round(v) : v),
-  currentRetailPrice: z.number().nonnegative().nullable().optional().transform(v => v ? Math.round(v) : v),
+  // Valuation (will be humanized)
+  estimatedValueMin: z.number().nonnegative().nullable().optional(),
+  estimatedValueMax: z.number().nonnegative().nullable().optional(),
+  currentRetailPrice: z.number().nonnegative().nullable().optional(),
+  valuationBasis: z.string().optional(), // Explain how value was determined
 
-  // Comparable sales - flexible schema to handle various GPT response formats
-  comparableSales: z.array(z.object({
-    description: z.string().optional().default(''),
-    venue: z.string().optional().default(''),
-    price: z.number().optional().default(0),
-    date: z.string().optional().default(''),
-    relevance: z.string().optional().default(''),
-  }).passthrough()).nullable().optional(),
+  // Knowledge State (NEW)
+  knowledgeState: KnowledgeStateSchema,
 
-  // Confidence and evidence
+  // Confidence
   confidence: z.number().min(0).max(1),
   identificationConfidence: z.number().min(0).max(1).nullable().optional(),
   makerConfidence: z.number().min(0).max(1).nullable().optional(),
+
+  // Evidence (legacy format for compatibility)
   evidenceFor: z.array(z.string()).nullable().optional(),
   evidenceAgainst: z.array(z.string()).nullable().optional(),
 
-  // Alternative candidates - flexible schema
-  alternativeCandidates: z.array(z.object({
-    name: z.string().optional().default(''),
-    confidence: z.number().optional().default(0),
-    reason: z.string().optional().default(''),
-  }).passthrough()).nullable().optional(),
+  // Visual Markers (NEW)
+  visualMarkers: z.array(VisualMarkerSchema).optional(),
 
-  // Verification guidance
+  // Alternative candidates
+  alternativeCandidates: z.array(z.object({
+    name: z.string(),
+    confidence: z.number(),
+    reason: z.string(),
+  })).nullable().optional(),
+
+  // Verification
   verificationTips: z.array(z.string()).nullable().optional(),
   redFlags: z.array(z.string()).nullable().optional(),
 
-  // Resale assessment
+  // Resale
   flipDifficulty: z.enum(['easy', 'moderate', 'hard', 'very_hard']).nullable().optional(),
   flipTimeEstimate: z.string().nullable().optional(),
   resaleChannels: z.array(z.string()).nullable().optional(),
 
-  // Legacy fields for compatibility
-  productUrl: z.string().url().nullable().optional(),
-  // stylingSuggestions can be array of strings OR array of objects
-  stylingSuggestions: z.union([
-    z.array(z.string()),
-    z.array(
-      z.object({
-        title: z.string().optional().default(''),
-        description: z.string().optional().default(''),
-        roomType: z.string().optional().default(''),
-        placement: z.string().nullable().optional(),
-        complementaryItems: z.array(z.string()).optional().default([]),
-        colorPalette: z.array(z.string()).optional().default([]),
-        designTips: z.string().nullable().optional(),
-      }).passthrough()
-    ),
-  ]).nullable().optional(),
+  // Item-specific Authentication (NEW)
+  itemAuthentication: ItemAuthenticationSchema.optional(),
+
+  // Suggested Captures (NEW)
+  suggestedCaptures: z.array(CaptureRequestSchema).optional(),
+});
+
+// Legacy authentication for backward compatibility
+const LegacyAuthenticationSchema = z.object({
+  authenticationConfidence: z.number().min(0).max(1),
+  authenticityRisk: z.enum(['low', 'medium', 'high', 'very_high']),
+  checklist: z.array(z.object({
+    id: z.string(),
+    category: z.enum(['visual', 'physical', 'documentation', 'provenance']),
+    priority: z.enum(['critical', 'important', 'helpful']),
+    check: z.string(),
+    howTo: z.string(),
+    whatToLookFor: z.string(),
+    redFlagSigns: z.array(z.string()),
+    requiresExpert: z.boolean(),
+    photoHelpful: z.boolean(),
+  })),
+  knownFakeIndicators: z.array(z.string()),
+  photosRequested: z.array(z.object({
+    id: z.string(),
+    area: z.string(),
+    reason: z.string(),
+    whatToCapture: z.string(),
+    priority: z.enum(['required', 'recommended', 'optional']),
+  })),
+  expertReferralRecommended: z.boolean(),
+  expertReferralReason: z.string().nullable(),
+  overallAssessment: z.string(),
 });
 
 export type AnalysisResult = z.infer<typeof WorldClassAnalysisSchema>;
 
-// Extended result with deal analysis and authentication
+// Extended result with deal analysis and legacy fields
 export interface WorldClassResult extends AnalysisResult {
   askingPrice?: number | null;
   dealRating?: DealRating | null;
   dealExplanation?: string | null;
   profitPotentialMin?: number | null;
   profitPotentialMax?: number | null;
-  // Authentication fields
+  // Legacy auth fields
   authenticationConfidence?: number | null;
   authenticityRisk?: AuthenticityRisk | null;
-  authenticationChecklist?: AuthenticationCheck[] | null;
+  authenticationChecklist?: z.infer<typeof LegacyAuthenticationSchema>['checklist'] | null;
   knownFakeIndicators?: string[] | null;
-  additionalPhotosRequested?: PhotoRequest[] | null;
+  additionalPhotosRequested?: z.infer<typeof LegacyAuthenticationSchema>['photosRequested'] | null;
   expertReferralRecommended?: boolean | null;
   expertReferralReason?: string | null;
   authenticationAssessment?: string | null;
+  // Legacy fields for backward compatibility
+  comparableSales?: Array<{
+    description: string;
+    venue: string;
+    price: number;
+    date: string;
+    relevance: string;
+  }> | null;
+  stylingSuggestions?: unknown[] | null;
+  productUrl?: string | null;
 }
 
+// Event emitter type
+export type AnalysisEventEmitter = (event: {
+  type: 'stage:start' | 'stage:complete' | 'error';
+  stage?: string;
+  message: string;
+  progress: number;
+  data?: Record<string, unknown>;
+}) => void;
+
 // ============================================================================
-// DOMAIN EXPERT PROMPTS
+// DOMAIN EXPERT KNOWLEDGE BASE
 // ============================================================================
 
 const DOMAIN_EXPERT_PROMPTS: Record<DomainExpert, string> = {
-  furniture: `You are a world-class FURNITURE expert with encyclopedic knowledge of:
+  furniture: `FURNITURE EXPERTISE:
 
-**PERIODS & STYLES:**
-- Colonial American (1620-1780): William & Mary, Queen Anne, Chippendale
+PERIOD IDENTIFICATION:
+- Colonial (1620-1780): William & Mary, Queen Anne, Chippendale
 - Federal (1780-1820): Hepplewhite, Sheraton, American Empire
-- Victorian (1840-1900): Gothic Revival, Rococo Revival, Renaissance Revival, Eastlake
-- Arts & Crafts (1890-1920): Mission, Craftsman, Prairie
-- Art Deco (1920-1940): Streamlined, geometric forms
-- Mid-Century Modern (1945-1975): Danish, American, Italian
-- European: Georgian, Regency, Biedermeier, Louis XV/XVI, Art Nouveau
+- Victorian (1840-1900): Gothic, Rococo, Renaissance Revival, Eastlake
+- Arts & Crafts (1890-1920): Mission, Craftsman - look for Stickley, Limbert, Roycroft marks
+- Art Deco (1920-1940): Streamlined, geometric
+- Mid-Century Modern (1945-1975): Eames, Knoll, Herman Miller, Danish
 
-**CONSTRUCTION ANALYSIS:**
-- Joinery: Hand-cut dovetails (irregular), machine dovetails (uniform), mortise & tenon, pegged
-- Secondary woods: Pine, poplar indicate American; oak indicates English
-- Nail types: Rose-head (pre-1800), cut nails (1790-1890), wire nails (1890+)
-- Saw marks: Circular (post-1830), straight (earlier)
-- Hardware: Bail pulls, brasses, hinges, locks - original vs replacement
-
-**KEY MAKERS TO IDENTIFY:**
-- Arts & Crafts: Gustav Stickley (red decal, branded), L. & J.G. Stickley, Limbert, Roycroft
-- Mid-Century: Eames, Herman Miller, Knoll, Nakashima, Wegner, Jacobsen
-- Victorian: Belter, Herter Brothers, Meeks
-- Early American: Duncan Phyfe, Newport/Boston makers
-
-**AUTHENTICATION & FAKE DETECTION EXPERTISE:**
-
-PERIOD FURNITURE VERIFICATION:
-- Dovetails: Hand-cut = uneven spacing, varying angles; Machine = perfectly uniform spacing
-- Screws: Flat-bottom slots (pre-1850), pointed slots (post-1850), Phillips head (post-1930)
-- Saw marks: Circular patterns (post-1850), straight saw marks (hand saw, earlier)
-- Secondary wood: Should be rough-cut poplar/pine on hidden surfaces; smooth = suspect
-- Wood shrinkage: Old wood shrinks across grain over time, causing:
-  * Round holes become oval
-  * Tops/panels slightly warped
-  * Slight gaps in joinery
-- Patina: Authentic shows darker color in crevices, lighter on high-wear areas
-- Hardware wear: Drawer pulls should show wear matching use (bottom pulls more worn)
-- Backboards: Should be rough-hewn, often with saw marks; smooth plywood = modern
-- Finish: Original shellac/lacquer has specific craquelure; modern poly is uniform
-- Nail examination: Rose-head (pre-1800), cut nails (1790-1890), wire nails (1890+)
+CONSTRUCTION TELLS:
+- Dovetails: Hand-cut (irregular spacing) vs machine (uniform) - hand = pre-1860 typically
+- Nails: Rose-head (pre-1800), cut nails (1790-1890), wire nails (1890+)
+- Screws: Flat-bottom slots (pre-1850), pointed slots (post-1850), Phillips (post-1930)
+- Secondary woods: Pine/poplar = American, oak = English
 
 MAKER AUTHENTICATION:
-- Gustav Stickley: Red decal (early), black branded "Stickley" in box, paper labels
+- Gustav Stickley: Red decal (early), black branded "Stickley" in box
 - L. & J.G. Stickley: "Handcraft" or "Work of..." labels
-- Roycroft: Orb and cross mark, "ROYCROFT" spelled out
-- Limbert: Branded with "Limbert's Arts Crafts" in rectangle
-- Herman Miller/Eames: Shock mounts, manufacturer label, dated production
-- Knoll: Label with model number, production date range
+- Herman Miller/Eames: Shock mounts, manufacturer labels with dates
+- Knoll: Labels with model numbers
 
-CONSTRUCTION RED FLAGS (Reproductions/Fakes):
-- Distressing that's too uniform across entire piece
-- Stain/finish in crevices but not on high points (reversed patina)
-- Modern screws or nails in supposedly antique pieces
-- Plywood or particleboard ANYWHERE on supposed antique
-- Joints too perfect for claimed age
-- Wood species inconsistent with claimed period/region
-- Hardware style wrong for claimed period
-- Tool marks inconsistent (machine marks on "hand-made" piece)
-- Glue types: Yellow/white glue = modern (hide glue on antiques)
-- New wood smell when drawers opened
-- Dovetails all identical (machine) vs slightly varied (hand)
-- No evidence of shrinkage on supposedly 100+ year old piece
-- Felt or fabric bottoms to hide plywood drawer bottoms
+RED FLAGS:
+- Distressing too uniform across entire piece
+- Modern screws/nails in "antique" pieces
+- Plywood anywhere on supposed antique
+- New wood smell when drawers opened`,
 
-MARRIAGE DETECTION (Mismatched Parts):
-- Top and base wood grain patterns don't match
-- Different secondary wood species top vs bottom
-- Hardware styles don't match period
-- Construction techniques differ between components
-- Patina inconsistent between parts
-- Size proportions look "off"`,
+  ceramics: `CERAMICS & POTTERY EXPERTISE:
 
-  ceramics: `You are a world-class CERAMICS & POTTERY expert with encyclopedic knowledge of:
-
-**AMERICAN ART POTTERY:**
+AMERICAN ART POTTERY:
 - Roseville: Pattern ID (Futura, Pinecone, Sunflower), mark evolution
-- Rookwood: Flame marks, date ciphers (1886-1960), artist signatures
+- Rookwood: Flame marks = 1886-1960, count flames for date
 - Weller: Louwelsa, Sicard, Hudson lines
-- McCoy: NM marks, cookie jars, planters
-- Hull: Little Red Riding Hood, Bow-Knot patterns
-- Van Briggle: Dated marks (1901-1920 most valuable), Lorelei form
-- Grueby: Matte green glazes, organic forms
-- Newcomb College: Incised decoration, artist marks
+- McCoy: "NM" marks, cookie jars
+- Van Briggle: Dated marks 1901-1920 most valuable
 
-**AMERICAN DINNERWARE:**
-- Fiesta: Original 5 colors (red, cobalt, ivory, yellow, green), mark dating
-- Bauer: Ring-ware, color identification
-- Russel Wright: American Modern, Iroquois Casual
+MARKS ANALYSIS:
+- Backstamps: Location, style, color all indicate date
+- Impressed vs printed marks
+- Artist signatures (especially Rookwood)
 
-**EUROPEAN CERAMICS:**
-- Meissen: Crossed swords marks (variations indicate date)
-- Royal Copenhagen: Wave marks, Flora Danica (extremely valuable)
-- Wedgwood: Jasperware (colors, quality), impressed marks
-- Sèvres: Interlaced L's, date letters
-- Limoges: Factory vs decorating studio marks
+EUROPEAN:
+- Meissen: Crossed swords (check orientation for period)
+- Royal Copenhagen: Wave marks
+- Wedgwood: Impressed marks, jasperware colors
 
-**ASIAN CERAMICS:**
-- Chinese Export: Famille rose, famille verte, Canton, Nanking
-- Japanese: Imari patterns, Satsuma, Kutani marks
-- Reign marks vs apocryphal marks
+RED FLAGS:
+- Marks too crisp/perfect on old pieces
+- Wrong mark style for claimed period
+- Paint over marks (hiding newer mark)`,
 
-**MARK ANALYSIS:**
-- Backstamps: Printed, stamped, impressed
-- Incised marks: Hand-carved
-- Paper labels: Often lost
-- Artist signatures`,
+  glass: `GLASS EXPERTISE:
 
-  glass: `You are a world-class GLASS expert with encyclopedic knowledge of:
+ART GLASS:
+- Tiffany: LCT Favrile signatures, iridescence quality
+- Steuben: Aurene signatures, Carder era
+- Lalique: R. LALIQUE (early) vs Lalique France (later)
 
-**AMERICAN ART GLASS:**
-- Tiffany: Favrile signatures (LCT, L.C.T. Favrile), iridescence quality, forms
-- Steuben: Aurene (gold, blue), acid-etched signatures, Carder era
-- Quezal: Similar to Tiffany, signed pieces
-- Durand: King Tut pattern, Spider Webbing
+DEPRESSION ERA (1920s-1940s):
+- Patterns: American Sweetheart, Cherry Blossom, Mayfair, Princess
+- Colors: Pink, green, amber, cobalt (cobalt = more valuable)
+- Makers: Anchor Hocking, Hazel Atlas, Jeannette
 
-**DEPRESSION GLASS (1920s-1940s):**
-- Patterns: American Sweetheart, Cherry Blossom, Mayfair, Princess, Cameo
-- Colors: Pink (most common), green, amber, cobalt, crystal
-- Manufacturers: Anchor Hocking, Hazel Atlas, Jeannette, Federal
-
-**CARNIVAL GLASS:**
-- Patterns: Grape & Cable (Northwood), Orange Tree, Peacock at the Fountain
+CARNIVAL GLASS:
+- Patterns: Grape & Cable, Orange Tree, Peacock at Fountain
 - Colors: Marigold (common), amethyst, green, blue, red (rare)
-- Marks: Northwood N underlined, Fenton
 
-**EUROPEAN GLASS:**
-- Lalique: R. LALIQUE (early), Lalique France (later), frosted finishes
-- Baccarat: Paperweights (millefiori, silhouette), stemware
-- Murano/Venetian: Millefiori, latticino, sommerso techniques
-- Czech/Bohemian: Cut glass, colored glass, Art Deco
+IDENTIFICATION:
+- Pontil marks indicate hand-blown
+- Mold seams = machine made
+- Ring/tone when tapped`,
 
-**IDENTIFICATION POINTS:**
-- Pontil marks: Rough (early), polished, fire-polished
-- Mold seams and marks
-- Signatures and acid stamps
-- Weight, ring, and brilliance`,
+  silver: `SILVER & METALWARE EXPERTISE:
 
-  silver: `You are a world-class SILVER & METALWARE expert with encyclopedic knowledge of:
+STERLING (.925):
+- American makers: Gorham, Tiffany, Reed & Barton, Wallace
+- Pattern identification crucial for value
+- Weight matters - heavier = more valuable
 
-**STERLING SILVER (.925):**
-- American makers: Gorham, Tiffany, Reed & Barton, Wallace, Kirk
-- Pattern identification: Active vs discontinued, rare patterns
-- Hollowware: Tea services, trays, bowls, candlesticks
-
-**ENGLISH HALLMARKS:**
+ENGLISH HALLMARKS (read all 4-5 marks):
 - Maker's mark (initials)
-- Standard mark: Lion passant (sterling)
-- Assay office: Leopard's head (London), anchor (Birmingham), crown (Sheffield)
-- Date letter: Changes yearly, font and shield shape indicate year
-- Monarch's head: Duty mark 1784-1890
+- Lion passant = sterling
+- City mark: Leopard (London), Anchor (Birmingham), Crown (Sheffield)
+- Date letter (font + shield shape = year)
 
-**COIN SILVER (.900):**
-- Early American silversmiths
-- Regional makers
-- Pseudo-hallmarks
+SILVERPLATE:
+- EPNS = Electroplated Nickel Silver
+- Triple/quadruple plate designations
+- Much less valuable than sterling
 
-**SILVERPLATE:**
-- EPNS (Electroplated Nickel Silver)
-- Quality designations: Triple, quadruple plate
-- Manufacturers: Rogers, Meriden, Reed & Barton
+RED FLAGS:
+- Marks rubbed/worn = possible fake
+- Wrong marks for claimed maker
+- Seams on supposedly hand-raised pieces`,
 
-**OTHER METALS:**
-- Pewter: Touch marks, American vs English
-- Bronze: Foundry marks, patina authenticity
-- Copper: Arts & Crafts pieces (Roycroft, Stickley shops)
+  jewelry: `JEWELRY EXPERTISE:
 
-**VALUE FACTORS:**
-- Weight (sterling), pattern rarity
-- Condition: Monograms, repairs, replating
-- Complete sets vs partial`,
+PERIODS:
+- Georgian (1714-1837): Closed-back settings, foil-backed stones
+- Victorian: Mourning jewelry, serpents, hearts, hands
+- Edwardian (1901-1915): Platinum filigree, diamonds + pearls
+- Art Nouveau (1890-1910): Organic forms, enamel, Lalique
+- Art Deco (1920-1935): Geometric, platinum, calibré-cut
+- Retro (1935-1950): Bold rose gold, large stones
 
-  jewelry: `You are a world-class JEWELRY expert with encyclopedic knowledge of:
+HALLMARKS:
+- 10K, 14K, 18K = Gold karat
+- 750 = 18K, 585 = 14K, 375 = 9K
+- 925 = Sterling silver
+- PLAT/PT = Platinum
 
-**PERIOD IDENTIFICATION:**
-- Georgian (1714-1837): Closed-back settings, foil-backed stones, cannetille work
-- Victorian: Early (romantic, serpents, hands), Mid (grand/mourning), Late (aesthetic)
-- Edwardian (1901-1915): Platinum filigree, diamonds & pearls, lace-like
-- Art Nouveau (1890-1910): Organic forms, enamel, plique-à-jour, Lalique
-- Art Deco (1920-1935): Geometric, platinum, calibré-cut colored stones
-- Retro (1935-1950): Bold rose gold, large colored stones, asymmetry
+COSTUME BRANDS:
+- Signed pieces more valuable: Miriam Haskell, Eisenberg, Trifari, Coro
+- Bakelite testing: Simichrome, hot water smell
 
-**HALLMARKS & MARKS:**
-- Purity: 10K, 14K, 18K, 750, 585, 375, 925, PLAT, PT
-- Maker's marks: Famous houses, regional makers
-- Country marks and date letters (English)
+RED FLAGS:
+- Modern findings on "antique" pieces
+- Wrong cut for claimed period
+- Glue where prongs should be`,
 
-**STONE IDENTIFICATION:**
-- Diamond cuts: Old mine (cushion), old European (round), brilliant
-- Setting styles: Bezel, prong, channel, pavé, invisible
-- Quality indicators visible to the eye
+  watches: `WATCH EXPERTISE:
 
-**COSTUME JEWELRY:**
-- High-end vintage: Miriam Haskell (unsigned early), Eisenberg, Weiss, Schiaparelli
-- Designer: Chanel, Dior, Trifari (Crown mark), Coro
-- Dating: © marks with years, construction methods
+LUXURY AUTHENTICATION (HIGH FAKE RISK):
 
-**AUTHENTICATION & FAKE DETECTION EXPERTISE:**
+ROLEX:
+- Crown at 12 o'clock (check for quality)
+- Cyclops magnification = 2.5x (fakes often 1.5x)
+- Case weight (solid vs hollow)
+- Rehaut engraving (post-2007)
+- Movement quality (requires opening)
 
-PRECIOUS METAL VERIFICATION:
-- 10K/14K/18K stamps: Check with acid test or electronic tester
-- 750 = 18K, 585 = 14K, 375 = 10K, 925 = Sterling
-- Plating wear: Look for base metal showing through at edges
-- Hallmarks: Research maker's marks against reference databases
-- Weight: Precious metals have specific density feel
-- Magnet test: Gold, silver, platinum are NOT magnetic
+OMEGA:
+- Hippocampus logo
+- Movement caliber matches model
+- Correct date for reference number
 
-GEMSTONE AUTHENTICATION:
-- Diamonds: Loupe for inclusions pattern (natural vs lab)
-- Colored stones: Check for bubbles (glass), curved striae (flame fusion)
-- Pearls: Tooth test (gritty = real, smooth = fake), weight (real heavier)
-- Emeralds: Expect inclusions (jardin); too clean = synthetic or glass
-- Rubies/Sapphires: Natural have silk inclusions; glass-filled are common
+PATEK PHILIPPE:
+- Calatrava cross
+- Movement finishing
+- Case construction
 
-PERIOD JEWELRY AUTHENTICATION:
-- Georgian: Hand-fabricated, foil-backed stones, cannetille work
-- Victorian: Look for snake motifs (early), lockets, mourning jewelry
-- Art Nouveau: Flowing organic forms, enamel work, plique-à-jour
-- Art Deco: Geometric precision, calibré-cut stones, platinum filigree
-- Retro: Bold rose gold, large stones, asymmetric designs
+RED FLAGS (COMMON FAKE TELLS):
+- Date magnification wrong
+- Wrong font on dial
+- Ticking second hand (should sweep)
+- Light weight
+- Poor finishing
+- Wrong crown position`,
 
-CLASP DATING:
-- Barrel clasps: Pre-1900
-- Hook & eye: Pre-1890
-- Spring ring: 1900-present
-- Lobster claw: 1970s-present
-- Safety catch: Post-1900
-- Tube hinges: Victorian and earlier
+  art: `ART & PRINTS EXPERTISE:
 
-LUXURY BRAND AUTHENTICATION:
-- Cartier: Serial numbers verifiable, specific box/papers
-- Tiffany: Return to Tiffany hearts, T&Co stamps
-- Van Cleef: Serial numbers on clasp, Alhambra clover details
-- Bulgari: BVLGARI spelling, specific font
+PAINTINGS:
+- Signature location and style
+- Canvas age and stretcher type
+- Craquelure patterns (age vs fake aging)
+- Paint layer analysis
 
-COSTUME JEWELRY AUTHENTICATION:
-- Miriam Haskell: Wired construction, baroque pearls, Russian gold plating
-- Eisenberg: Clear rhinestones, E mark or EISENBERG ORIGINAL
-- Trifari: Crown mark (1930s+), quality rhinestones
-- Weiss: Signed pieces, high-quality Austrian crystals
+PRINTS:
+- Edition numbers (lower = more valuable usually)
+- Paper quality and watermarks
+- Printing technique (etching, lithograph, serigraph)
+- Condition (foxing, toning, tears)
 
-RED FLAGS (Fake Jewelry):
-- Hallmarks in wrong location or wrong format
-- Green discoloration on skin = base metal plating
-- Lightweight for size = hollow or plated
-- Glued stones (fine jewelry uses prongs/bezels)
-- Spelling errors on designer marks
-- Wrong font on hallmarks
-- Stones that look too perfect (may be CZ or synthetic)
-- Magnetic response (gold/silver/platinum aren't magnetic)
-- Uniform wear patterns (real pieces wear unevenly)`,
+POSTERS:
+- Original vs reproduction
+- Linen-backing indicates value
+- Size matches known examples
 
-  watches: `You are a world-class WATCHES & CLOCKS expert with encyclopedic knowledge of:
+RED FLAGS:
+- Signature too perfect
+- Modern materials under old varnish
+- Photo-mechanical dots (indicates print)`,
 
-**LUXURY WATCHES:**
-- Patek Philippe: Reference numbers, complications, value hierarchy
-- Rolex: Model identification (Submariner, Daytona, Datejust), serial dating
-- Omega: Speedmaster variants, Seamaster, Constellation
-- Audemars Piguet: Royal Oak identification
-- Cartier: Tank, Santos, Pasha
+  textiles: `TEXTILES & RUGS EXPERTISE:
 
-**VINTAGE & COLLECTIBLE:**
-- Heuer: Pre-TAG chronographs (Carrera, Monaco, Autavia)
-- Universal Genève: Compax, Tri-Compax
-- Longines, LeCoultre, Hamilton
+RUGS:
+- Hand-knotted vs machine (flip over and check)
+- KPSI = knots per square inch (higher = finer)
+- Origin: Persian, Turkish, Chinese patterns
+- Natural vs synthetic dyes
 
-**AMERICAN POCKET WATCHES:**
-- Railroad grade: Waltham, Elgin, Hamilton requirements
-- Size, jewel count, adjustment markings
-- Case materials: Gold, gold-filled, silver, nickel
+QUILTS:
+- Hand vs machine stitching
+- Pattern identification
+- Fabric dating
 
-**CLOCKS:**
-- Tall case/Grandfather: American vs English, makers
-- Mantel: French gilt bronze, American shelf clocks
-- Wall: Vienna regulators, banjo (Willard), schoolhouse
+VINTAGE CLOTHING:
+- Labels and union tags
+- Zipper types (metal = older)
+- Construction techniques
 
-**AUTHENTICATION & FAKE DETECTION EXPERTISE:**
+RED FLAGS:
+- Synthetic fibers in "antique" piece
+- Modern dyes in old rug
+- Wrong construction for claimed age`,
 
-ROLEX VERIFICATION (Critical - Highest Counterfeit Volume):
-- Cyclops: MUST be 2.5x magnification, date fills window completely; fakes often 1.5x or less
-- Crown logo: 3D coronet with 5 points, precise detail; fakes flat or poorly defined
-- Case weight: Submariner ~155g, Datejust ~130g, GMT-Master II ~160g; fakes lighter
-- Rehaut engraving: "ROLEX ROLEX ROLEX" laser-etched around dial edge (post-2007)
-- Serial location: Between lugs at 6 o'clock (vintage) or on rehaut (post-2007)
-- Movement: Cal. 3135/3235 with Geneva stripes, rose gold rotor; fakes have cheap movements
-- Crystal: Authentic has green AR coating visible at angle (inner surface)
-- Caseback: ALWAYS smooth for sport models; display back = FAKE (except Cellini)
-- Bezel: 120 clicks for Submariner, 60 clicks for GMT; smooth action, no play
-- Lume: SuperLuminova with even green glow; fakes have uneven or different color
-- SEL (Solid End Links): No gap between case and bracelet on modern references
-- Crown guards: Proportional to case, sharp edges; fakes often rounded or wrong size
-- Date wheel: Font matches reference period, centered in window
+  toys: `TOYS & DOLLS EXPERTISE:
 
-OMEGA VERIFICATION:
-- Serial format: 8 digits (modern), 7 digits (vintage); verify with production records
-- Caseback medallion: Seahorse (Seamaster) or Observatory (Constellation)
-- Co-Axial movement: Red "Co-Axial" text on rotor, specific finish patterns
-- Font consistency: Same typeface across dial, date, bezel
-- Speedmaster: "Professional" with manual wind; don't buy unseen movement
+TIN TOYS:
+- Lithography quality
+- Maker marks (Marx, Chein, Schuco)
+- Working mechanism
 
-PATEK PHILIPPE VERIFICATION:
-- Hallmarks: Geneva Seal until 2008, then Patek Philippe Seal
-- Reference numbers: Verify format matches known references
-- Caseback engravings: Laser-precision, specific depth
-- Movement: Hand-finished to exceptional standard
-- Papers: Essential for value; verify against Patek archives
+DOLLS:
+- Head marks (Jumeau, Bru, Simon & Halbig)
+- Body type and material
+- Original clothing vs replacements
 
-CARTIER VERIFICATION:
-- Secret signature: "Cartier" hidden in dial (usually at 7 or 10 o'clock)
-- Case screws: Specific head shapes per model
-- Blue hands: Must be actual blued steel or properly tinted
+CAST IRON:
+- Banks and vehicles
+- Paint originality
+- Reproduction detection
 
-GENERAL WATCH RED FLAGS (Fakes):
-- Spelling errors on dial or caseback
-- Incorrect model/reference combinations
-- Movement not matching claimed model
-- Weight significantly off (use reference charts)
-- Subdials misaligned or wrong position
-- Cheap feeling crown, pusher, or clasp action
-- Numerals or indices poorly applied
-- Date window showing wrong font
-- Cyclops not centered over date
-- Misaligned rehaut engraving
-- Exhibition caseback on model that never had one`,
+RED FLAGS:
+- Too bright paint on "old" toys
+- Wrong screws/fasteners
+- Modern casting marks`,
 
-  art: `You are a world-class ART & PRINTS expert with encyclopedic knowledge of:
+  books: `BOOKS & EPHEMERA EXPERTISE:
 
-**PAINTING ANALYSIS:**
-- Signature identification: Location, style, period consistency
-- Medium: Oil, watercolor, acrylic, gouache, pastel, mixed media
-- Support: Canvas (weave, age), panel, paper
-- Frame: Period-appropriate, later addition
+FIRST EDITIONS:
+- First edition, first printing indicators
+- Number lines
+- Dust jacket condition (crucial for value)
 
-**PRINT IDENTIFICATION:**
-- Relief: Woodcut (raised lines), wood engraving (finer detail)
-- Intaglio: Engraving (V-shaped lines), etching (softer), mezzotint, aquatint
-- Planographic: Lithograph (crayon-like), silkscreen
-- Photomechanical: Half-tone dots
+CONDITION GRADING:
+- Fine, Very Good, Good, Fair, Poor
+- Binding tightness
+- Foxing, staining, inscriptions
 
-**EDITION INFORMATION:**
-- Numbering: Edition size, artist proofs (A/P, E/A)
-- Signatures: Pencil (original), stamped, printed
-- Publisher and printer marks
+RARE BOOKS:
+- Early printed books (incunabula)
+- Important bindings
+- Association copies
 
-**PHOTOGRAPHY:**
-- Process: Daguerreotype (mirror-like), ambrotype, tintype
-- Paper prints: Albumen, platinum, silver gelatin
-- Photographer identification
+RED FLAGS:
+- Facsimile vs original
+- Replaced pages
+- Rebacked bindings`,
 
-**PROVENANCE:**
-- Gallery labels, exhibition stickers
-- Collector marks
-- Auction records
+  tools: `TOOLS & INSTRUMENTS EXPERTISE:
 
-**AUTHENTICATION & FAKE DETECTION EXPERTISE:**
-
-PAINTING AUTHENTICATION:
-- Canvas age: Old canvas has irregular weave, natural fiber darkening
-- Stretcher bars: Hand-cut (pre-1850), machine-cut (modern)
-- Stretcher bar marks: Ghost lines from frame contact over decades
-- Craquelure (fine cracks): Natural = irregular network; fake = uniform pattern
-- Paint layer: Old oil paint has distinct brush stroke texture
-- Signature analysis: Consistent with artist's known signatures; period-appropriate materials
-- UV examination: Modern paint fluoresces differently than old paint
-- Frame: Period-appropriate; old frames show wear consistent with age
-
-PRINT AUTHENTICATION:
-- Paper: Laid paper (handmade lines), wove paper (smooth), chain lines
-- Watermarks: Research paper mill marks
-- Plate marks: Intaglio prints have embossed plate edge
-- Edition numbering: Must be consistent with known edition sizes
-- Signature: Pencil signatures are hand-signed; printed signatures = reproduction
-- Print quality: Original prints have crisp lines; reproductions may show dot patterns
-
-PHOTOGRAPH AUTHENTICATION:
-- Process identification: Daguerreotype (mirror surface), albumen (yellow-brown)
-- Paper type: Fiber-based (pre-1970s), RC/resin-coated (modern)
-- Stamp/signature: Period-appropriate placement and style
-- Mount: Period-appropriate cardboard and design
-
-SCULPTURE/3D AUTHENTICATION:
-- Foundry marks: Research known foundries
-- Edition numbers: Verify against catalogue raisonné
-- Patina: Natural vs applied (chemical aging)
-- Construction: Cast marks, welding style
-
-RED FLAGS (Art Forgery):
-- Craquelure in uniform pattern (artificial aging)
-- Canvas threads too uniform (modern machine-made)
-- Modern pigments in "old" painting (UV test)
-- Signature looks hesitant or traced
-- Provenance gaps or suspicious history
-- Price too good for attributed artist
-- Label/stamp appears artificially aged
-- Paint over craquelure (later addition)
-- Paper too white for claimed age
-- Edition number higher than known edition size
-- Multiple versions of "unique" work`,
-
-  textiles: `You are a world-class TEXTILES & RUGS expert with encyclopedic knowledge of:
-
-**ORIENTAL RUGS:**
-- Persian/Iranian: Tabriz, Isfahan, Kashan, Kerman, Heriz (geometric), tribal
-- Turkish: Oushak (soft colors), Hereke (fine silk), Kilim (flatweave)
-- Caucasian: Kazak (bold), Shirvan, Kuba
-- Chinese: Art Deco (Nichols), Peking, antique Ningxia
-
-**RUG ANALYSIS:**
-- Knot type: Persian/Senneh (asymmetric) vs Turkish/Ghiordes (symmetric)
-- Knot density: KPSI (knots per square inch)
-- Materials: Wool pile, cotton/silk foundation, silk pile
-- Dyes: Natural (vegetable) vs synthetic (aniline, chrome)
-
-**QUILTS:**
-- Types: Pieced, appliqué, whole cloth, crazy quilts
-- Patterns: Log Cabin, Double Wedding Ring, Star, Dresden Plate
-- Regional: Amish (solid colors), Hawaiian, Baltimore Album
-- Dating: Fabrics, batting type, quilting patterns
-
-**VINTAGE CLOTHING & TEXTILES:**
-- Labels: Union labels (help dating), designer labels
-- Construction: Hand vs machine stitching
-- Fabrics: Fiber identification, period-appropriate
-- Condition: Stains, tears, moth damage`,
-
-  toys: `You are a world-class TOYS & DOLLS expert with encyclopedic knowledge of:
-
-**ANTIQUE TOYS:**
-- Cast iron: Banks (mechanical, still), vehicles (Arcade, Hubley, Kenton)
-- Tin lithograph: Wind-up, friction, German makers (Lehmann, Bing)
-- Pressed steel: Buddy L, Keystone, Structo (larger vehicles)
-- Die-cast: Dinky (British), Corgi, Matchbox, Hot Wheels (post-1968)
-
-**MODEL TRAINS:**
-- Lionel: Standard gauge (pre-1939), O gauge, postwar vs modern
-- American Flyer: S gauge
-- European: Märklin (German), Hornby (British)
-- Condition: Original boxes multiply value
-
-**DOLLS:**
-- Bisque: French (Jumeau, Bru, Steiner - highest value), German (Kestner, Simon & Halbig)
-- China head: 1840-1900, molded hair, painted features
-- Composition: 1900-1950, painted features
-- Barbie: #1 (1959, holes in feet), vintage accessories
-
-**IDENTIFICATION:**
-- Maker's marks and stamps
+HAND TOOLS:
+- Stanley planes (type study for dating)
+- Maker marks on chisels
 - Patent dates
-- Original paint vs repaint (huge value difference)
-- Completeness
-- Original box (can double value)`,
 
-  books: `You are a world-class BOOKS & EPHEMERA expert with encyclopedic knowledge of:
-
-**FIRST EDITION IDENTIFICATION:**
-- Publisher practices: Number lines, stated first editions
-- Points: Specific textual variants identifying first printings
-- Dust jackets: Present, condition, price-clipped
-
-**VALUABLE CATEGORIES:**
-- Modern first editions: Literature, mystery, science fiction
-- Illustrated books: N.C. Wyeth, Rackham, Dulac
-- Children's: Dr. Seuss, Sendak, Caldecott winners
-- Americana: Early imprints, Western, travel
-
-**CONDITION GRADING:**
-- Fine, Near Fine, Very Good, Good, Fair, Poor
-- Dust jacket: Same scale, plus price-clipped notation
-- Ex-library indicators
-
-**EPHEMERA:**
-- Postcards: Real photo (RPPC), linen, chrome
-- Trade cards: Victorian advertising
-- Photographs: Process, subject matter
-- Maps: Condition, hand-coloring
-- Autographs: Authentication concerns
-
-**PROVENANCE:**
-- Bookplates
-- Inscriptions
-- Association copies`,
-
-  tools: `You are a world-class TOOLS & SCIENTIFIC INSTRUMENTS expert with encyclopedic knowledge of:
-
-**HAND TOOLS:**
-- Stanley planes: Type study (type 1-20), rare models (#1, #2, specialty)
-- Wooden planes: American vs European, makers (Ohio Tool, Sandusky)
-- Edge tools: Chisels, axes, drawknives, spokeshaves
-- Measuring: Folding rules (ivory, boxwood), levels, squares
-
-**SCIENTIFIC INSTRUMENTS:**
-- Surveying: Transits, theodolites, compasses, chains
-- Navigation: Sextants, octants, ship's compasses
-- Medical: Surgical sets, dental instruments, microscopes
-- Optical: Telescopes, microscopes, cameras
-
-**IDENTIFICATION:**
-- Maker's marks
-- Patent dates
-- Materials: Rosewood, boxwood, brass, ivory
-- Completeness (cases, accessories)
+SCIENTIFIC INSTRUMENTS:
+- Makers (Keuffel & Esser, etc.)
+- Brass vs plastic components
 - Working condition
 
-**VALUE FACTORS:**
-- Maker reputation
-- Rarity
-- Condition (user grade vs collector grade)
-- Completeness`,
+MEDICAL INSTRUMENTS:
+- Age indicators
+- Maker marks
+- Completeness of sets
 
-  lighting: `You are a world-class LIGHTING expert with encyclopedic knowledge of:
+RED FLAGS:
+- Modern replacement parts
+- Over-restoration
+- Missing components`,
 
-**ART GLASS LAMPS:**
-- Tiffany Studios: Shade patterns, base designs, signatures, authenticity
-- Handel: Reverse-painted shades (landscape, floral), signatures
-- Pairpoint: Puffy shades (blown-out), reverse painted
-- Jefferson, Phoenix, Pittsburgh Lamp Company
+  lighting: `LIGHTING EXPERTISE:
 
-**ANTIQUE LIGHTING:**
-- Oil lamps: Whale oil (single burner), kerosene (chimney), Argand
-- Gas fixtures: Victorian, converted vs unconverted
-- Early electric: Carbon filament bulbs, original wiring
+LAMPS:
+- Tiffany: Base + shade matching, signatures
+- Handel: Reverse-painted shades
+- Pairpoint: "Puffy" shades
 
-**CHANDELIERS:**
-- Crystal: Baccarat, Waterford, Bohemian
-- Bronze: French Empire, Victorian
-- Art glass: Murano, Art Deco
+IDENTIFICATION:
+- Base and shade should be original pair
+- Wiring age (cloth = old)
+- Hardware style
 
-**IDENTIFICATION:**
-- Base and shade matching (married pieces less valuable)
-- Signatures and marks
-- Hardware: Original vs replacement
-- Wiring: Safety consideration, period indicators
+CHANDELIERS:
+- Crystal quality
+- Original vs replacement parts
+- Period appropriate
 
-**AUTHENTICATION:**
-- Tiffany: Lead lines, glass selection, patina
-- Handel: Paint quality, signature placement
-- Reproductions: Taiwan copies common`,
+RED FLAGS:
+- Married base and shade
+- Modern wiring passed as original
+- Wrong hardware for period`,
 
-  electronics: `You are an expert at identifying modern ELECTRONICS:
+  electronics: `ELECTRONICS EXPERTISE:
 
-**CATEGORIES:**
-- Computers & tablets
-- Smartphones
-- Cameras & photography
-- Audio equipment
-- Gaming consoles & accessories
-- Home appliances
+VINTAGE AUDIO:
+- Tube vs transistor era
+- Brand value (McIntosh, Marantz)
+- Working condition crucial
 
-**IDENTIFICATION:**
-- Brand and exact model
-- Generation/version
-- Storage/memory variants
-- Color variants
-- Regional variants
-
-**VALUE FACTORS:**
+VINTAGE COMPUTERS:
+- Apple, Commodore, etc.
+- Completeness (all parts/manuals)
 - Working condition
-- Cosmetic condition
-- Original packaging
-- Included accessories
-- Firmware/software version`,
 
-  vehicles: `You are an expert at identifying VEHICLES:
+CAMERAS:
+- Leica, Hasselblad premiums
+- Lens condition
+- Functionality
 
-**AUTOMOBILES:**
-- Make, model, year
-- Trim level and options
-- VIN decode indicators
-- Matching numbers (classics)
-- Modifications
+RED FLAGS:
+- Non-working without disclosure
+- Replacement parts
+- Modified items`,
 
-**MOTORCYCLES:**
-- Make, model, year
-- Engine size
-- Special editions
+  vehicles: `VEHICLES EXPERTISE:
 
-**BICYCLES:**
-- Vintage: Schwinn, Raleigh, French racing
-- Modern: Brand and model
+AUTOMOBILES:
+- VIN decode for authenticity
+- Matching numbers (engine, trans)
+- Documentation (title history)
 
-**CONDITION:**
-- Body/frame
-- Interior
-- Mechanical
-- Documentation`,
+MOTORCYCLES:
+- Frame and engine numbers
+- Original vs restored
+- Parts correctness
 
-  general: `You are a knowledgeable expert at identifying a wide variety of items.
+BICYCLES:
+- Schwinn, Raleigh premiums
+- Original paint vs repaint
+- Component age
 
-Analyze this item considering:
-- What it is (specific identification)
-- Who made it (maker/manufacturer)
-- When it was made (era/period)
-- Where it was made (origin)
-- Current condition
-- Market value
-- Historical or cultural significance
+RED FLAGS:
+- VIN tampering
+- Non-matching numbers
+- Title issues`,
 
-Provide as specific an identification as possible based on visible evidence.`,
+  general: `GENERAL EXPERTISE:
+
+Analyze considering:
+- What is it exactly?
+- Who made it?
+- When was it made?
+- Where was it made?
+- What condition is it in?
+- What comparable items sell for?
+
+Look for any maker marks, labels, dates, or other identifying features.`,
 };
 
 // ============================================================================
-// STAGE 1: SMART TRIAGE
+// CORE ANALYSIS FUNCTIONS
 // ============================================================================
 
-async function performTriage(imageBase64: string): Promise<z.infer<typeof TriageSchema>> {
-  console.log('🔍 Stage 1: Smart Triage - Categorizing item...');
+/**
+ * Stage 1: Smart Triage - Quick categorization
+ */
+async function performTriage(
+  images: CapturedImage[]
+): Promise<z.infer<typeof TriageSchema>> {
+  console.log('🔍 Stage 1: Smart Triage...');
+
+  const imageContents = images.map(img => ({
+    type: 'image_url' as const,
+    image_url: { url: img.dataUrl, detail: 'high' as const },
+  }));
 
   const response = await openai.chat.completions.create({
     model: VISION_MODEL,
     messages: [
       {
         role: 'system',
-        content: `You are an expert at categorizing items for specialized analysis.
+        content: `You are an expert appraiser doing initial triage of an item.
 
-DETERMINE:
-1. **Category**:
-   - "antique": Pre-1920, shows age/patina, historical craftsmanship
-   - "vintage": 1920-1990, retro aesthetic, collectible
-   - "modern_branded": Post-1990 with clear brand identity
-   - "modern_generic": Post-1990 without clear branding
+CRITICAL FIRST STEP: Carefully examine the image and transcribe ALL visible text, including:
+- Brand names (e.g., "POLAROID", "Rolex", "Tiffany & Co.")
+- Model names/numbers (e.g., "OneStep 2", "Submariner", "Model 1234")
+- Maker's marks, signatures, stamps
+- Labels, tags, engravings
+- Any other text visible in the image
 
-2. **Domain Expert** (which specialist should analyze):
-   - furniture: Tables, chairs, cabinets, case pieces, seating
-   - ceramics: Pottery, porcelain, stoneware, dinnerware
-   - glass: Art glass, depression glass, carnival glass, stemware
-   - silver: Sterling, silverplate, pewter, metalware
-   - jewelry: Fine jewelry, costume jewelry, gemstones
-   - watches: Wristwatches, pocket watches, clocks
-   - art: Paintings, prints, sculptures, photographs
-   - textiles: Rugs, quilts, vintage clothing, tapestries
-   - toys: Antique toys, dolls, trains, collectibles
-   - books: Rare books, first editions, ephemera
-   - tools: Hand tools, scientific instruments
-   - lighting: Lamps, chandeliers, fixtures
-   - electronics: Modern tech devices
-   - vehicles: Cars, motorcycles, bicycles
-   - general: Everything else
+This text is ESSENTIAL for accurate identification.
 
-3. **Quality Tier**:
-   - museum: Exceptional, museum-quality piece
-   - high: Fine quality, significant value
-   - mid: Good quality, collectible
-   - low: Common, utilitarian
-   - unknown: Cannot determine
-
-CRITICAL: Read ALL text visible in the image including:
-- Brand names, logos, model numbers
-- Labels, stickers, engravings
-- Serial numbers, part numbers
-- Any printed or embossed text
+THEN categorize:
+1. Category (REQUIRED - must be EXACTLY one of these 4 values):
+   - "antique": Pre-1920, shows authentic age/patina
+   - "vintage": 1920-1990, collectible
+   - "modern_branded": Post-1990 with identifiable brand (MUST have visible brand)
+   - "modern_generic": Post-1990, no clear brand, OR if uncertain use this
+2. Domain Expert (REQUIRED - must be EXACTLY one of these 15 values):
+   furniture, ceramics, glass, silver, jewelry, watches, art, textiles, toys, books, tools, lighting, electronics, vehicles, general
+   NOTE: If the item doesn't clearly fit, use "general"
+3. Assess quality tier
 
 Respond in JSON:
 {
-  "category": "antique" | "vintage" | "modern_branded" | "modern_generic",
-  "domainExpert": "furniture" | "ceramics" | etc.,
-  "itemType": "Specific item type (e.g., 'dining chair', 'art pottery vase')",
-  "estimatedEra": "Time period or null",
-  "qualityTier": "museum" | "high" | "mid" | "low" | "unknown",
+  "category": "REQUIRED: EXACTLY one of: antique | vintage | modern_branded | modern_generic",
+  "domainExpert": "REQUIRED: EXACTLY one of: furniture | ceramics | glass | silver | jewelry | watches | art | textiles | toys | books | tools | lighting | electronics | vehicles | general",
+  "itemType": "specific item description WITH brand/model if visible (e.g., 'Polaroid OneStep 2 Camera' not just 'camera')",
+  "estimatedEra": "specific time period (e.g., '2017' or '1890-1910') or null",
+  "qualityTier": "REQUIRED: EXACTLY one of: museum | high | mid | low | unknown",
   "confidence": 0.0-1.0,
-  "reasoning": "Brief explanation of categorization",
-  "visibleBranding": "Any visible brand/maker or null",
-  "visibleModelNumber": "Any visible model number/ID or null",
-  "allVisibleText": ["Array of ALL text visible in image"]
-}`,
+  "reasoning": "brief explanation including any visible text that helped identify",
+  "visibleBranding": "EXACT brand name as visible in image, or null if none",
+  "allVisibleText": ["transcribe", "every", "piece", "of", "visible", "text"]
+}
+
+CRITICAL RULES:
+- "category" MUST be exactly: "antique", "vintage", "modern_branded", or "modern_generic". NEVER use "unknown" or any other value.
+- "domainExpert" MUST be exactly one of the 15 allowed values. For photographs use "art". For architecture use "art". For anything not fitting, use "general".
+- "qualityTier" MUST be exactly: "museum", "high", "mid", "low", or "unknown".
+
+IMPORTANT: 'category' is the AGE category (antique/vintage/modern), NOT the item type.
+For a painting from 1890, category="antique" and domainExpert="art".
+For modern jewelry, category="modern_generic" and domainExpert="jewelry".
+For a photograph, category based on age and domainExpert="art".`,
       },
       {
         role: 'user',
         content: [
-          { type: 'text', text: 'Categorize this item for expert analysis. IMPORTANT: Read and report ALL visible text including model numbers, labels, and engravings:' },
-          { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } },
+          { type: 'text', text: 'First, carefully read and transcribe ALL visible text in this image. Then categorize the item:' },
+          ...imageContents,
         ],
       },
     ],
-    max_completion_tokens: 600,
+    max_tokens: 800,
     temperature: 0.1,
     response_format: { type: 'json_object' },
   });
@@ -985,653 +822,501 @@ Respond in JSON:
   const content = response.choices[0]?.message?.content;
   if (!content) throw new ExternalServiceError('No triage response', 'OpenAI');
 
-  const validated = TriageSchema.parse(safeJsonParse(content, 'triage'));
-  console.log(`📦 Category: ${validated.category}`);
-  console.log(`🎯 Domain Expert: ${validated.domainExpert}`);
-  console.log(`📊 Quality Tier: ${validated.qualityTier}`);
-  console.log(`🕐 Era: ${validated.estimatedEra || 'Unknown'}`);
+  const rawData = safeJsonParse(content, 'triage') as Record<string, unknown>;
 
-  return validated;
-}
+  // Normalize invalid enum values to valid fallbacks before parsing
+  const categoryFallback = (val: unknown): 'antique' | 'vintage' | 'modern_branded' | 'modern_generic' => {
+    const valid = ['antique', 'vintage', 'modern_branded', 'modern_generic'];
+    if (typeof val === 'string' && valid.includes(val)) return val as 'antique' | 'vintage' | 'modern_branded' | 'modern_generic';
+    console.log(`⚠️ Invalid category "${val}", defaulting to "vintage"`);
+    return 'vintage';
+  };
 
-// ============================================================================
-// STAGE 2: FORENSIC EVIDENCE EXTRACTION
-// ============================================================================
+  const domainFallback = (val: unknown): DomainExpert => {
+    const valid = ['furniture', 'ceramics', 'glass', 'silver', 'jewelry', 'watches', 'art', 'textiles', 'toys', 'books', 'tools', 'lighting', 'electronics', 'vehicles', 'general'];
+    if (typeof val === 'string' && valid.includes(val)) return val as DomainExpert;
+    // Map common invalid values
+    const mappings: Record<string, DomainExpert> = {
+      'architecture': 'art',
+      'photography': 'art',
+      'photograph': 'art',
+      'photos': 'art',
+      'music': 'general',
+      'records': 'general',
+      'collectibles': 'general',
+      'memorabilia': 'general',
+      'unknown': 'general',
+    };
+    const lower = String(val).toLowerCase();
+    if (mappings[lower]) {
+      console.log(`⚠️ Mapping domainExpert "${val}" to "${mappings[lower]}"`);
+      return mappings[lower];
+    }
+    console.log(`⚠️ Invalid domainExpert "${val}", defaulting to "general"`);
+    return 'general';
+  };
 
-async function extractEvidence(
-  imageBase64: string,
-  triage: z.infer<typeof TriageSchema>
-): Promise<z.infer<typeof EvidenceSchema>> {
-  console.log('🔬 Stage 2: Forensic Evidence Extraction...');
+  const qualityFallback = (val: unknown): 'museum' | 'high' | 'mid' | 'low' | 'unknown' => {
+    const valid = ['museum', 'high', 'mid', 'low', 'unknown'];
+    if (typeof val === 'string' && valid.includes(val)) return val as 'museum' | 'high' | 'mid' | 'low' | 'unknown';
+    console.log(`⚠️ Invalid qualityTier "${val}", defaulting to "mid"`);
+    return 'mid';
+  };
 
-  const domainPrompt = DOMAIN_EXPERT_PROMPTS[triage.domainExpert];
+  // Normalize the data before parsing
+  const normalizedData = {
+    ...rawData,
+    category: categoryFallback(rawData.category),
+    domainExpert: domainFallback(rawData.domainExpert),
+    qualityTier: qualityFallback(rawData.qualityTier),
+  };
 
-  const response = await openai.chat.completions.create({
-    model: VISION_MODEL,
-    messages: [
-      {
-        role: 'system',
-        content: `${domainPrompt}
-
----
-
-YOUR TASK: Extract ALL observable evidence from this ${triage.itemType}.
-
-## CRITICAL: DOCUMENT EVERYTHING VISIBLE
-
-**VISIBLE TEXT & MARKS:**
-- Read and transcribe ALL text (labels, stamps, signatures, model numbers)
-- Note exact location of each
-- Categorize as one of: maker_mark, model_number, label, signature, stamp, title, author, publisher, isbn, edition, vin, license_plate, engine_number, serial_number, barcode, upc, sku, artist_signature, gallery_label, provenance_label, date, price_tag, inventory_number, other
-- Rate confidence in reading
-
-**MAKER INDICATORS:**
-- Any identified maker/manufacturer
-- Type of mark (paper label, impressed, stamped, branded, incised)
-- Location of mark
-- Confidence level
-
-**CONSTRUCTION:**
-- Materials used (wood species, metal type, fabric, etc.)
-- Construction techniques visible
-- Quality indicators
-- Age indicators (wear patterns, oxidation, patina)
-
-**CONDITION:**
-- Overall condition (mint/excellent/good/fair/poor)
-- Specific issues (chips, cracks, repairs, missing parts)
-- Evidence of restoration
-- Originality notes (original finish? replaced parts?)
-
-**DISTINCTIVE FEATURES:**
-- Unique identifying characteristics
-- Design elements
-- Unusual features
-
-**RED FLAGS:**
-- Warning signs (reproductions, marriages, heavy restoration)
-- Inconsistencies
-- Signs of fakery
-
-Respond in JSON:
-{
-  "visibleText": [
-    {"text": "exact text", "location": "where", "type": "maker_mark|model_number|label|signature|stamp|title|author|publisher|isbn|serial_number|barcode|artist_signature|date|price_tag|other", "confidence": 0.0-1.0}
-  ],
-  "makerIndicators": {
-    "makerName": "identified maker or null",
-    "markType": "type of mark or null",
-    "markLocation": "where the mark is or null",
-    "confidence": 0.0-1.0
-  },
-  "construction": {
-    "materials": ["identified materials"],
-    "techniques": ["construction methods observed"],
-    "qualityIndicators": ["signs of quality or lack thereof"],
-    "ageIndicators": ["evidence of age/period"]
-  },
-  "condition": {
-    "overall": "mint|excellent|good|fair|poor",
-    "issues": ["specific problems"],
-    "restorations": ["evidence of repair/restoration"],
-    "originalityNotes": ["notes on original vs replaced"]
-  },
-  "distinctiveFeatures": ["unique identifying features"],
-  "redFlags": ["warning signs or concerns"]
-}`,
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `Extract ALL evidence from this ${triage.itemType}.
-
-CRITICAL PRIORITY:
-1. READ ALL VISIBLE TEXT - model numbers, serial numbers, brand names, labels, stickers, engravings
-2. Look at EVERY surface for text including undersides, backs, labels
-3. If you see partial text, report what you can read
-4. Report the EXACT text you see, character by character
-
-Every detail matters for precise identification and valuation.`,
-          },
-          { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } },
-        ],
-      },
-    ],
-    max_completion_tokens: 2500,
-    temperature: 0.1,
-    response_format: { type: 'json_object' },
-  });
-
-  const content = response.choices[0]?.message?.content;
-  if (!content) throw new ExternalServiceError('No evidence response', 'OpenAI');
-
-  const validated = EvidenceSchema.parse(safeJsonParse(content, 'evidence'));
-
-  console.log(`📋 Found ${validated.visibleText.length} text elements`);
-  console.log(`📋 Maker: ${validated.makerIndicators.makerName || 'Unknown'}`);
-  console.log(`📋 Condition: ${validated.condition.overall}`);
-  if (validated.redFlags.length > 0) {
-    console.log(`⚠️ Red flags: ${validated.redFlags.join(', ')}`);
+  const parseResult = TriageSchema.safeParse(normalizedData);
+  if (!parseResult.success) {
+    console.error('❌ Triage validation failed after normalization:', parseResult.error.issues);
+    // Return a minimal valid response
+    return {
+      category: 'vintage' as const,
+      domainExpert: 'general' as const,
+      itemType: String(rawData.itemType || 'Unknown Item'),
+      estimatedEra: null,
+      qualityTier: 'mid' as const,
+      confidence: 0.3,
+      reasoning: 'Fallback due to parsing error',
+      visibleBranding: null,
+      allVisibleText: [],
+    };
   }
 
-  return validated;
+  console.log(`📦 ${parseResult.data.category} | ${parseResult.data.domainExpert} | ${parseResult.data.qualityTier}`);
+  return parseResult.data;
 }
 
-// ============================================================================
-// STAGE 3: CANDIDATE GENERATION
-// ============================================================================
-
-async function generateCandidates(
-  imageBase64: string,
+/**
+ * Stage 2: Deep Analysis with Honest Confidence
+ */
+async function performDeepAnalysis(
+  images: CapturedImage[],
   triage: z.infer<typeof TriageSchema>,
-  evidence: z.infer<typeof EvidenceSchema>
-): Promise<z.infer<typeof CandidateSchema>[]> {
-  console.log('🎯 Stage 3: Generating identification candidates...');
-
-  const domainPrompt = DOMAIN_EXPERT_PROMPTS[triage.domainExpert];
-
-  const response = await openai.chat.completions.create({
-    model: VISION_MODEL,
-    messages: [
-      {
-        role: 'system',
-        content: `${domainPrompt}
-
----
-
-Based on the extracted evidence, generate the TOP 3 most likely identifications.
-
-## EXTRACTED EVIDENCE:
-${JSON.stringify(evidence, null, 2)}
-
-## ITEM CONTEXT:
-- Category: ${triage.category}
-- Item Type: ${triage.itemType}
-- Era: ${triage.estimatedEra || 'Unknown'}
-- Quality Tier: ${triage.qualityTier}
-
-## YOUR TASK:
-Generate 3 candidates with supporting evidence.
-
-## CONFIDENCE CALIBRATION:
-- 0.95+: Maker's mark clearly visible and matches known examples
-- 0.85-0.94: Strong construction/style evidence, consistent with known maker
-- 0.70-0.84: Style/period identified, maker narrowed to possibilities
-- 0.50-0.69: General identification solid, specifics uncertain
-- <0.50: Best guess based on limited evidence
-
-## VALUE ESTIMATION:
-Provide realistic market values based on:
-- Recent auction results
-- Dealer prices
-- Online marketplace (eBay sold, 1stDibs, Chairish)
-- Condition adjustment
-
-Respond in JSON:
-{
-  "candidates": [
-    {
-      "rank": 1,
-      "identification": "Full specific identification (e.g., 'Gustav Stickley #354 Dining Chair')",
-      "maker": "Maker/manufacturer name or null",
-      "model": "Model/pattern name or null",
-      "period": "Date range (e.g., '1905-1912')",
-      "confidence": 0.0-1.0,
-      "evidenceFor": ["evidence supporting this ID"],
-      "evidenceAgainst": ["evidence that doesn't match or is uncertain"],
-      "valueEstimate": {
-        "low": minimum_USD,
-        "high": maximum_USD,
-        "basis": "How value was estimated (auction results, dealer prices, etc.)"
-      }
-    }
-  ]
-}`,
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: 'Generate the top 3 identification candidates with evidence and values:',
-          },
-          { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } },
-        ],
-      },
-    ],
-    max_completion_tokens: 2500,
-    temperature: 0.2,
-    response_format: { type: 'json_object' },
-  });
-
-  const content = response.choices[0]?.message?.content;
-  if (!content) throw new ExternalServiceError('No candidates response', 'OpenAI');
-
-  const parsed = safeJsonParse(content, 'candidates') as { candidates?: unknown[] };
-  const candidates = z.array(CandidateSchema).parse(parsed.candidates || []);
-
-  for (const c of candidates) {
-    console.log(`   #${c.rank}: ${c.identification} (${Math.round(c.confidence * 100)}%)`);
-    if (c.valueEstimate.low && c.valueEstimate.high) {
-      console.log(`       Value: $${c.valueEstimate.low} - $${c.valueEstimate.high}`);
-    }
-  }
-
-  return candidates;
-}
-
-// ============================================================================
-// STAGE 4: FINAL ANALYSIS WITH DEAL & FLIP ASSESSMENT
-// ============================================================================
-
-async function generateFinalAnalysis(
-  imageBase64: string,
-  triage: z.infer<typeof TriageSchema>,
-  evidence: z.infer<typeof EvidenceSchema>,
-  candidates: z.infer<typeof CandidateSchema>[],
   askingPrice?: number
 ): Promise<WorldClassResult> {
-  console.log('✨ Stage 4: Generating final analysis with deal assessment...');
+  console.log('🔬 Stage 2: Deep Analysis with Honest Confidence...');
 
-  const topCandidate = candidates[0];
-  const alternatives = candidates.slice(1);
+  // Use enhanced domain prompts from knowledge base when available
+  const enhancedPrompt = getEnhancedDomainPrompt(triage.domainExpert);
+  const basePrompt = DOMAIN_EXPERT_PROMPTS[triage.domainExpert];
+  const domainPrompt = enhancedPrompt || basePrompt;
 
-  const response = await openai.chat.completions.create({
-    model: VISION_MODEL,
-    messages: [
-      {
-        role: 'system',
-        content: `You are finalizing a world-class antique/collectible analysis.
+  // Get relevant maker marks for context
+  const relevantMakers = MAKER_MARKS_DATABASE
+    .filter(m => m.category === triage.domainExpert)
+    .slice(0, 10)
+    .map(m => `• ${m.maker}: ${m.markDescription} (${m.activeYears})`)
+    .join('\n');
 
-## TOP CANDIDATE:
-${JSON.stringify(topCandidate, null, 2)}
+  // Get identification patterns for this category
+  const patterns = IDENTIFICATION_PATTERNS
+    .filter(p => p.category === triage.domainExpert)
+    .slice(0, 3);
 
-## ALTERNATIVES:
-${JSON.stringify(alternatives, null, 2)}
+  const makerContext = relevantMakers
+    ? `\n\nKEY MAKER MARKS TO LOOK FOR:\n${relevantMakers}`
+    : '';
 
-## EXTRACTED EVIDENCE:
-${JSON.stringify(evidence, null, 2)}
+  const patternContext = patterns.length > 0
+    ? `\n\nIDENTIFICATION PATTERNS:\n${patterns.map(p =>
+        `${p.itemType}:\n  - Look for: ${p.keyIdentifiers.slice(0, 3).join(', ')}\n  - Red flags: ${p.redFlags.slice(0, 2).join(', ')}`
+      ).join('\n')}`
+    : '';
+  const imageContents = images.map((img, idx) => ({
+    type: 'image_url' as const,
+    image_url: { url: img.dataUrl, detail: 'high' as const },
+  }));
 
-## TRIAGE DATA:
-${JSON.stringify(triage, null, 2)}
+  const imageDescriptions = images.map((img, idx) =>
+    `Image ${idx + 1}: ${img.label} (${img.role})`
+  ).join('\n');
 
-${askingPrice ? `## ASKING PRICE: $${askingPrice / 100}` : ''}
+  // Get self-learning enhancements based on accumulated knowledge
+  const learningEnhancements = getPromptEnhancements(triage.domainExpert);
+  const learningContext = learningEnhancements.length > 0
+    ? `\n\nLEARNED INSIGHTS (from previous analyses):\n${learningEnhancements.map(e => `• ${e}`).join('\n')}`
+    : '';
 
-## YOUR TASK:
-Generate a comprehensive analysis including:
+  // Get confusion warnings for detected terms
+  const detectedTerms = [
+    triage.itemType,
+    triage.visibleBranding,
+    ...(triage.allVisibleText || [])
+  ].filter(Boolean) as string[];
+  const confusionWarnings = getConfusionWarnings(detectedTerms);
+  const confusionContext = confusionWarnings.length > 0
+    ? `\n\nCONFUSION WARNINGS:\n${confusionWarnings.map(w => `⚠️ ${w}`).join('\n')}`
+    : '';
 
-1. **Identification** - Confirm or refine the top candidate
-2. **Historical Context** - Rich narrative about this piece, maker, period, significance
-3. **Valuation** - Market value estimate with reasoning
-4. **Comparable Sales** - Reference recent sales of similar items
-5. **Verification Tips** - What buyer should check/verify before purchasing
-6. **Red Flags** - Any concerns about authenticity, condition, value
-7. **Resale Assessment** - How easy to flip, where to sell, timeline
-${askingPrice ? '8. **Deal Analysis** - Is this asking price a good deal?' : ''}
+  // Include triage visible text context
+  const triageContext = triage.visibleBranding || triage.allVisibleText?.length
+    ? `\nPREVIOUSLY DETECTED TEXT FROM TRIAGE:
+${triage.visibleBranding ? `- Brand/Maker: "${triage.visibleBranding}"` : ''}
+${triage.allVisibleText?.length ? `- All visible text: ${triage.allVisibleText.join(', ')}` : ''}
+Use this text in your identification. The name field should include the brand if detected.`
+    : '';
 
-## DEAL RATING (if asking price provided):
-- "exceptional": 50%+ below market value - incredible find
-- "good": 20-50% below market - solid deal
-- "fair": Within 20% of market - reasonable price
-- "overpriced": Above market value - pass or negotiate
+  const dealPrompt = askingPrice ? `
+DEAL ANALYSIS (Asking Price: $${askingPrice / 100}):
+Rate as: exceptional (50%+ below market), good (20-50% below), fair (within 20%), overpriced
+Calculate actual profit potential considering fees and time.` : '';
 
-## FLIP DIFFICULTY:
-- "easy": High demand, quick sale (2-4 weeks)
-- "moderate": Decent demand, moderate timeline (1-3 months)
-- "hard": Niche market, longer timeline (3-6 months)
-- "very_hard": Very specialized, may take 6+ months
-
-Respond in JSON:
-{
-  "name": "Full specific name",
-  "maker": "Maker name or null",
-  "modelNumber": "Model/pattern or null",
-  "brand": "Brand (same as maker for antiques) or null",
-
-  "productCategory": "${triage.category}",
-  "domainExpert": "${triage.domainExpert}",
-  "itemSubcategory": "Specific subcategory",
-
-  "era": "Period (e.g., 'Arts & Crafts, c. 1905-1912')",
-  "style": "Style/movement",
-  "periodStart": year_number_or_null,
-  "periodEnd": year_number_or_null,
-  "originRegion": "Geographic origin",
-
-  "description": "2-3 sentence physical description highlighting identifying features",
-  "historicalContext": "3-4 paragraphs of rich historical narrative",
-  "attributionNotes": "Notes on maker attribution confidence",
-
-  "estimatedValueMin": USD_integer,
-  "estimatedValueMax": USD_integer,
-  "currentRetailPrice": null,
-
-  "comparableSales": [
-    {"description": "Similar item sold", "venue": "Auction house/dealer", "price": USD, "date": "Month Year", "relevance": "Why relevant"}
-  ],
-
-  "confidence": final_confidence_0_to_1,
-  "identificationConfidence": identification_confidence,
-  "makerConfidence": maker_attribution_confidence,
-  "evidenceFor": ["supporting evidence"],
-  "evidenceAgainst": ["contradicting or uncertain evidence"],
-
-  "alternativeCandidates": [
-    {"name": "Alternative ID", "confidence": score, "reason": "Why possible"}
-  ],
-
-  "verificationTips": ["What to check before buying"],
-  "redFlags": ["Concerns or warnings"],
-
-  "flipDifficulty": "easy" | "moderate" | "hard" | "very_hard",
-  "flipTimeEstimate": "2-4 weeks" | "1-3 months" | etc.,
-  "resaleChannels": ["Best places to sell"],
-
-  "stylingSuggestions": [
-    {
-      "title": "Interior design suggestion",
-      "description": "Details",
-      "roomType": "Room",
-      "complementaryItems": ["items"],
-      "colorPalette": ["#hex"]
-    }
-  ]
-}`,
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `Generate the final comprehensive analysis${askingPrice ? ` with deal assessment for asking price $${askingPrice / 100}` : ''}:`,
-          },
-          { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } },
-        ],
-      },
+  // Build the JSON schema example for the prompt
+  const jsonSchemaExample = `{
+  "name": "Specific item name with maker/model if visible (e.g., 'Polaroid OneStep 2 i-Type Camera')",
+  "maker": "Manufacturer name if identifiable, or null",
+  "brand": "Brand name if visible/identifiable, or null",
+  "modelNumber": "Model number if visible, or null",
+  "era": "Specific time period (e.g., '2017', '1890-1910', 'Victorian Era')",
+  "style": "Design style or movement (e.g., 'Art Deco', 'Mid-Century Modern')",
+  "periodStart": 1890,
+  "periodEnd": 1910,
+  "originRegion": "Country or region of manufacture",
+  "description": "Detailed 2-4 sentence description of what this item IS, its key features, materials, and condition. Be specific about what you observe.",
+  "historicalContext": "2-4 sentences about the historical significance, why this item matters, who used it, and its place in history.",
+  "estimatedValueMin": 100,
+  "estimatedValueMax": 300,
+  "confidence": 0.85,
+  "identificationConfidence": 0.9,
+  "makerConfidence": 0.7,
+  "knowledgeState": {
+    "confirmed": [
+      {"statement": "Fact you can prove", "evidence": "What you see that proves it", "confidence": 0.95}
     ],
-    max_completion_tokens: 4000,
-    temperature: 0.3,
-    response_format: { type: 'json_object' },
-  });
-
-  const content = response.choices[0]?.message?.content;
-  if (!content) throw new ExternalServiceError('No final analysis response', 'OpenAI');
-
-  const analysis = WorldClassAnalysisSchema.parse(safeJsonParse(content, 'final-analysis'));
-
-  // Calculate deal analysis if asking price provided
-  // Note: askingPrice is in cents, estimatedValueMin/Max are in dollars
-  let dealAnalysis: Partial<WorldClassResult> = {};
-  if (askingPrice && analysis.estimatedValueMin && analysis.estimatedValueMax) {
-    const marketMid = (analysis.estimatedValueMin + analysis.estimatedValueMax) / 2;
-
-    // Guard against division by zero
-    if (marketMid <= 0) {
-      console.warn('⚠️ Market value is zero or negative, skipping deal analysis');
-    } else {
-      // Convert asking price from cents to dollars for comparison
-      const askingDollars = askingPrice / 100;
-      const percentOfMarket = (askingDollars / marketMid) * 100;
-
-      let dealRating: DealRating;
-      let dealExplanation: string;
-
-      if (percentOfMarket <= 50) {
-        dealRating = 'exceptional';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is ${Math.round(100 - percentOfMarket)}% below market value ($${marketMid.toLocaleString()}). Exceptional find - buy immediately if authentic.`;
-      } else if (percentOfMarket <= 80) {
-        dealRating = 'good';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is ${Math.round(100 - percentOfMarket)}% below market value ($${marketMid.toLocaleString()}). Solid deal with good profit potential.`;
-      } else if (percentOfMarket <= 120) {
-        dealRating = 'fair';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is within market range ($${analysis.estimatedValueMin.toLocaleString()}-$${analysis.estimatedValueMax.toLocaleString()}). Fair price if you want the item for your collection.`;
-      } else {
-        dealRating = 'overpriced';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is ${Math.round(percentOfMarket - 100)}% above market value ($${marketMid.toLocaleString()}). Consider negotiating or passing.`;
-      }
-
-      // Calculate profit potential in dollars (can be negative for overpriced items)
-      const profitMin = analysis.estimatedValueMin - askingDollars;
-      const profitMax = analysis.estimatedValueMax - askingDollars;
-
-      dealAnalysis = {
-        askingPrice,
-        dealRating,
-        dealExplanation,
-        // Show actual profit/loss - negative means potential loss
-        profitPotentialMin: Math.round(profitMin),
-        profitPotentialMax: Math.round(profitMax),
-      };
-    }
-  }
-
-  return { ...analysis, ...dealAnalysis };
-}
-
-// ============================================================================
-// STAGE 5: AUTHENTICATION ANALYSIS
-// ============================================================================
-
-// High-risk categories for counterfeiting
-const HIGH_COUNTERFEIT_RISK: Record<string, AuthenticityRisk> = {
-  watches: 'very_high',   // Luxury watches are most counterfeited
-  jewelry: 'high',        // Fine jewelry commonly faked
-  art: 'high',            // Art forgery is prevalent
-  silver: 'medium',       // Sterling marks can be forged
-  ceramics: 'medium',     // Marks can be added to reproductions
-  furniture: 'medium',    // Reproductions and marriages common
-  glass: 'medium',        // Art glass reproductions exist
-  textiles: 'low',        // Rugs sometimes misattributed
-  toys: 'low',            // Reproductions of tin toys exist
-  books: 'low',           // First edition fraud less common
-  tools: 'low',           // Rarely counterfeited
-  lighting: 'medium',     // Tiffany reproductions common
-  electronics: 'low',     // Mostly genuine but may be refurbished
-  vehicles: 'low',        // VIN fraud rare
-  general: 'low',
-};
-
-async function generateAuthenticationAnalysis(
-  imageBase64: string,
-  triage: z.infer<typeof TriageSchema>,
-  evidence: z.infer<typeof EvidenceSchema>,
-  analysis: WorldClassResult
-): Promise<AuthenticationAnalysis> {
-  console.log('🔐 Stage 5: Authentication Analysis...');
-
-  const domainPrompt = DOMAIN_EXPERT_PROMPTS[triage.domainExpert];
-  const baseRisk = HIGH_COUNTERFEIT_RISK[triage.domainExpert] || 'low';
-
-  // Determine if this specific item has elevated risk
-  const isLuxuryBrand = analysis.maker?.toLowerCase().match(
-    /rolex|patek|omega|cartier|tiffany|louis vuitton|hermes|chanel|audemars|vacheron|breguet/
-  );
-  const isHighValue = (analysis.estimatedValueMax || 0) > 5000;
-  const hasRedFlags = (analysis.redFlags?.length || 0) > 0;
-
-  let adjustedRisk = baseRisk;
-  if (isLuxuryBrand || isHighValue) {
-    if (baseRisk === 'low') adjustedRisk = 'medium';
-    else if (baseRisk === 'medium') adjustedRisk = 'high';
-    else if (baseRisk === 'high') adjustedRisk = 'very_high';
-  }
-  if (hasRedFlags && adjustedRisk !== 'very_high') {
-    const riskOrder: AuthenticityRisk[] = ['low', 'medium', 'high', 'very_high'];
-    const currentIndex = riskOrder.indexOf(adjustedRisk);
-    adjustedRisk = riskOrder[Math.min(currentIndex + 1, 3)];
-  }
+    "probable": [
+      {"statement": "Likely fact", "evidence": "Why you think so", "confidence": 0.7, "howToConfirm": "How to verify"}
+    ],
+    "needsVerification": [
+      {"question": "What you need to know", "photoNeeded": "What photo would help", "importance": "critical", "impactOnValue": "How it affects value"}
+    ],
+    "completeness": 0.7
+  },
+  "evidenceFor": ["List of observations supporting your identification"],
+  "evidenceAgainst": ["Any observations that don't fit or raise questions"],
+  "verificationTips": ["Specific things owner could check to confirm authenticity"],
+  "redFlags": ["Any warning signs of reproduction, fake, or damage"],
+  "flipDifficulty": "easy|moderate|hard|very_hard",
+  "flipTimeEstimate": "1-2 weeks",
+  "resaleChannels": ["eBay", "1stDibs", "specialty dealers"]
+}`;
 
   const response = await openai.chat.completions.create({
     model: VISION_MODEL,
     messages: [
       {
         role: 'system',
-        content: `${domainPrompt}
+        content: `You are a world-class ${triage.domainExpert} expert providing brutally honest analysis.
+
+${domainPrompt}
+${makerContext}
+${patternContext}
+${triageContext}
+${learningContext}
+${confusionContext}
 
 ---
 
-You are now performing an AUTHENTICATION ANALYSIS for this item.
+CRITICAL INSTRUCTIONS:
 
-## IDENTIFIED ITEM:
-- Name: ${analysis.name}
-- Maker: ${analysis.maker || 'Unknown'}
-- Era: ${analysis.era || 'Unknown'}
-- Value Range: $${analysis.estimatedValueMin || 0} - $${analysis.estimatedValueMax || 0}
-- Domain: ${triage.domainExpert}
-- Base Counterfeit Risk: ${adjustedRisk}
+1. **IDENTIFY WHAT THE IMAGE ACTUALLY SHOWS** - Focus on the PRIMARY object in the image. Is it furniture, a vase, a watch, silver, a painting, etc.? Your identification MUST match what you see.
 
-## EXTRACTED EVIDENCE:
-${JSON.stringify(evidence, null, 2)}
+2. **READ ALL VISIBLE TEXT** - Look for brand names, model numbers, maker's marks, labels, or text. This is essential for identification.
 
-## YOUR TASK:
-Generate a comprehensive authentication analysis with:
+3. **USE PRECISE NAMES** - Be as specific as possible:
+   - BAD: "Windsor Chair" → GOOD: "Windsor Bow-Back Side Chair"
+   - BAD: "Art Pottery Vase" → GOOD: "Roseville Pinecone Jardiniere, Pattern 632-4"
+   - BAD: "Vintage Watch" → GOOD: "Rolex Submariner Reference 5513"
+   - BAD: "Silver Flatware" → GOOD: "Tiffany & Co. Chrysanthemum Pattern Sterling Fork"
+   Include the full name with maker, pattern, model, or reference when identifiable.
 
-1. **Authentication Confidence** (0.0-1.0): How confident are you this is AUTHENTIC (not a fake/reproduction)?
-   - 0.95+: Clear maker marks, construction consistent, no red flags
-   - 0.80-0.94: Most indicators positive, minor uncertainties
-   - 0.60-0.79: Some concerns, additional verification recommended
-   - 0.40-0.59: Significant concerns, expert examination needed
-   - <0.40: Likely fake/reproduction, major red flags
+4. **IDENTIFY THE MAKER/BRAND** - For antiques and collectibles, maker attribution is crucial:
+   - Furniture: Look for labels, stamps, construction style (Stickley, Herman Miller, Thonet, etc.)
+   - Ceramics: Check base marks, glazes, patterns (Rookwood, Roseville, Meissen, etc.)
+   - Silver: Read hallmarks, look for maker's marks (Tiffany, Gorham, Georg Jensen, etc.)
+   - Glass: Check signatures, style (Tiffany Favrile, Lalique, etc.)
 
-2. **Domain-Specific Checklist**: Generate 5-8 authentication checks specific to this item type
-   - Each check should have clear instructions
-   - Include what to look for (authentic) vs red flags (fake)
-   - Mark priority: critical/important/helpful
-   - Note if requires expert or if photo would help
+5. **DESCRIBE WHAT YOU ACTUALLY SEE** - Your description must be about THIS specific item, not generic category information.
 
-3. **Known Fake Indicators**: What do fakes/reproductions of THIS specific item typically show?
+6. **HONEST CONFIDENCE** - Set confidence based on certainty:
+   - 0.9+ = Brand/maker clearly visible and positively identified
+   - 0.7-0.9 = Strong identification based on style/construction
+   - 0.5-0.7 = Reasonable guess, some uncertainty
+   - Below 0.5 = Uncertain, need more information
 
-4. **Additional Photos Needed**: What specific photos would help verify authenticity?
-   - Be specific: "caseback close-up", "signature detail", "construction underneath"
+7. **KNOWLEDGE STATE** - Fill in with:
+   - confirmed: Facts proven by what you see
+   - probable: Likely but not fully verifiable
+   - needsVerification: What additional info would help
 
-5. **Expert Referral**: Should a professional authentication be recommended?
+${dealPrompt}
 
-Respond in JSON:
-{
-  "authenticationConfidence": 0.0-1.0,
-  "authenticityRisk": "${adjustedRisk}",
-  "checklist": [
-    {
-      "id": "unique-id-1",
-      "category": "visual" | "physical" | "documentation" | "provenance",
-      "priority": "critical" | "important" | "helpful",
-      "check": "What to verify (e.g., 'Cyclops magnification')",
-      "howTo": "How to perform the check",
-      "whatToLookFor": "Signs of authenticity",
-      "redFlagSigns": ["Signs of fake 1", "Signs of fake 2"],
-      "requiresExpert": boolean,
-      "photoHelpful": boolean
-    }
-  ],
-  "knownFakeIndicators": [
-    "What fakes of this item type typically show"
-  ],
-  "photosRequested": [
-    {
-      "id": "photo-1",
-      "area": "Specific area (e.g., 'caseback', 'signature', 'joints')",
-      "reason": "Why this photo helps authentication",
-      "whatToCapture": "Specific instructions for the photo",
-      "priority": "required" | "recommended" | "optional"
-    }
-  ],
-  "expertReferralRecommended": boolean,
-  "expertReferralReason": "Why expert is recommended or null",
-  "overallAssessment": "2-3 sentence summary of authentication status and key concerns"
-}`,
+Available images:
+${imageDescriptions}
+
+You MUST respond with a JSON object matching this EXACT structure:
+${jsonSchemaExample}
+
+All fields should be filled with real data based on your analysis. Do NOT leave description or historicalContext empty or generic.`,
       },
       {
         role: 'user',
         content: [
           {
             type: 'text',
-            text: `Generate authentication analysis for this ${analysis.name}. Provide domain-specific checks that a buyer should perform to verify authenticity.`,
+            text: `Analyze this ${triage.itemType} in detail.
+
+STEP 1: Look at the PRIMARY OBJECT in this image. What is it? (furniture, ceramics, silver, glass, painting, watch, etc.)
+
+STEP 2: Read ALL visible text (brand names, model numbers, labels, markings, signatures).
+
+STEP 3: Identify the specific item with its FULL NAME including:
+- Maker/brand (e.g., "Herman Miller", "Tiffany & Co.", "Rookwood")
+- Pattern/model name if applicable (e.g., "Chrysanthemum", "Pinecone", "Lounge Chair 670")
+- Type variant (e.g., "Bow-Back Chair", "Standard Glaze Vase", "Dragonfly Shade")
+
+STEP 4: Provide:
+- Real description of what you ACTUALLY SEE in this specific item
+- Historical context about this maker, pattern, or item type
+- Honest confidence levels based on visibility of identifying features
+- What you know for certain vs what you're inferring
+
+Fill in ALL fields with real data based on what you observe.`,
           },
-          { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } },
+          ...imageContents,
         ],
       },
     ],
-    max_completion_tokens: 3000,
+    max_tokens: 4500,
     temperature: 0.2,
     response_format: { type: 'json_object' },
   });
 
   const content = response.choices[0]?.message?.content;
-  if (!content) throw new ExternalServiceError('No authentication response', 'OpenAI');
+  if (!content) throw new ExternalServiceError('No analysis response', 'OpenAI');
 
-  const authAnalysis = AuthenticationAnalysisSchema.parse(safeJsonParse(content, 'authentication'));
+  const parsed = safeJsonParse(content, 'analysis') as Record<string, unknown>;
 
-  console.log(`🔐 Authentication Confidence: ${Math.round(authAnalysis.authenticationConfidence * 100)}%`);
-  console.log(`⚠️ Risk Level: ${authAnalysis.authenticityRisk}`);
-  console.log(`📋 Checklist Items: ${authAnalysis.checklist.length}`);
-  console.log(`📸 Photos Requested: ${authAnalysis.photosRequested.length}`);
-  if (authAnalysis.expertReferralRecommended) {
-    console.log(`👨‍🔬 Expert Referral: Recommended`);
+  // Build result with proper defaults
+  const result: WorldClassResult = {
+    // Core identification
+    name: String(parsed.name || triage.itemType),
+    maker: parsed.maker as string | null || null,
+    modelNumber: parsed.modelNumber as string | null || null,
+    brand: parsed.brand as string | null || null,
+
+    // Categorization
+    productCategory: triage.category,
+    domainExpert: triage.domainExpert,
+    itemSubcategory: parsed.itemSubcategory as string | null || null,
+
+    // Period and origin
+    era: parsed.era as string | null || triage.estimatedEra,
+    style: parsed.style as string | null || null,
+    periodStart: parsed.periodStart as number | null || null,
+    periodEnd: parsed.periodEnd as number | null || null,
+    originRegion: parsed.originRegion as string | null || null,
+
+    // Description
+    description: String(parsed.description || 'No description available'),
+    historicalContext: String(parsed.historicalContext || 'Historical context not available'),
+    attributionNotes: parsed.attributionNotes as string | null || null,
+
+    // Valuation - humanize prices
+    estimatedValueMin: parsed.estimatedValueMin
+      ? humanizePrice(Number(parsed.estimatedValueMin))
+      : null,
+    estimatedValueMax: parsed.estimatedValueMax
+      ? humanizePrice(Number(parsed.estimatedValueMax))
+      : null,
+    currentRetailPrice: parsed.currentRetailPrice
+      ? humanizePrice(Number(parsed.currentRetailPrice))
+      : null,
+
+    // Knowledge State (NEW)
+    knowledgeState: parsed.knowledgeState as typeof result.knowledgeState || {
+      confirmed: [],
+      probable: [],
+      needsVerification: [],
+      completeness: 0.5,
+    },
+
+    // Confidence
+    confidence: Number(parsed.confidence) || 0.5,
+    identificationConfidence: parsed.identificationConfidence as number | null || null,
+    makerConfidence: parsed.makerConfidence as number | null || null,
+
+    // Evidence
+    evidenceFor: (parsed.evidenceFor as string[]) || [],
+    evidenceAgainst: (parsed.evidenceAgainst as string[]) || [],
+
+    // Visual Markers (NEW)
+    visualMarkers: (parsed.visualMarkers as typeof result.visualMarkers) || [],
+
+    // Alternatives
+    alternativeCandidates: (parsed.alternativeCandidates as typeof result.alternativeCandidates) || [],
+
+    // Verification
+    verificationTips: (parsed.verificationTips as string[]) || [],
+    redFlags: (parsed.redFlags as string[]) || [],
+
+    // Resale
+    flipDifficulty: (parsed.flipDifficulty as FlipDifficulty) || null,
+    flipTimeEstimate: parsed.flipTimeEstimate as string | null || null,
+    resaleChannels: (parsed.resaleChannels as string[]) || [],
+
+    // Item Authentication (NEW)
+    itemAuthentication: parsed.itemAuthentication as typeof result.itemAuthentication || undefined,
+
+    // Suggested Captures (NEW)
+    suggestedCaptures: (parsed.suggestedCaptures as typeof result.suggestedCaptures) || [],
+  };
+
+  // Deal analysis
+  if (askingPrice) {
+    result.askingPrice = askingPrice;
+    result.dealRating = parsed.dealRating as DealRating || null;
+    result.dealExplanation = parsed.dealExplanation as string || null;
+    result.profitPotentialMin = parsed.profitPotentialMin as number || null;
+    result.profitPotentialMax = parsed.profitPotentialMax as number || null;
   }
 
-  return authAnalysis;
+  // Convert item authentication to legacy format for compatibility
+  if (result.itemAuthentication) {
+    result.authenticationConfidence = result.itemAuthentication.confidenceScore;
+    result.authenticityRisk = determineRisk(result.itemAuthentication);
+    result.expertReferralRecommended = result.itemAuthentication.expertNeeded;
+    result.expertReferralReason = result.itemAuthentication.expertType || null;
+    result.authenticationAssessment = result.itemAuthentication.recommendation;
+    result.knownFakeIndicators = result.itemAuthentication.criticalIssues;
+  }
+
+  // Fetch real market data from auction databases
+  try {
+    const searchQuery = `${result.maker || ''} ${result.name}`.trim();
+    console.log(`📊 Fetching market data for: "${searchQuery}"`);
+
+    const marketData = await searchAllAuctionDatabases(searchQuery, {
+      category: result.domainExpert || undefined,
+      minPrice: result.estimatedValueMin ? Math.floor(result.estimatedValueMin * 0.3) : undefined,
+      maxPrice: result.estimatedValueMax ? Math.ceil(result.estimatedValueMax * 3) : undefined,
+      limit: 10,
+    });
+
+    if (marketData.allResults.length > 0) {
+      console.log(`   Found ${marketData.allResults.length} comparable sales from ${marketData.sourcesQueried.join(', ')}`);
+
+      // Convert to our comparableSales format
+      result.comparableSales = marketData.allResults.slice(0, 5).map(sale => ({
+        description: sale.title,
+        venue: sale.marketplace,
+        price: sale.soldPrice,
+        date: sale.soldDate,
+        relevance: `${Math.round(sale.similarity * 100)}% match`,
+      }));
+
+      // Optionally adjust estimates based on real market data
+      const priceRange = calculatePriceRange(marketData.allResults);
+      if (priceRange && priceRange.count >= 3) {
+        console.log(`   Market range: $${priceRange.min / 100} - $${priceRange.max / 100} (${priceRange.count} sales)`);
+        // Blend AI estimate with market data for more accurate pricing
+        if (result.estimatedValueMin && result.estimatedValueMax) {
+          const aiMid = (result.estimatedValueMin + result.estimatedValueMax) / 2;
+          const marketMid = (priceRange.min + priceRange.max) / 2;
+          // Weight: 60% AI, 40% market data
+          const blendedMid = aiMid * 0.6 + marketMid * 0.4;
+          const range = (priceRange.max - priceRange.min) / 2;
+          result.estimatedValueMin = Math.round(Math.max(priceRange.min, blendedMid - range));
+          result.estimatedValueMax = Math.round(Math.min(priceRange.max * 1.2, blendedMid + range));
+        }
+      }
+    } else {
+      console.log(`   No comparable sales found in auction databases`);
+    }
+  } catch (marketError) {
+    // Don't fail the whole analysis if market data lookup fails
+    console.warn(`⚠️ Market data lookup failed (non-fatal):`, marketError);
+  }
+
+  console.log(`✅ Analysis complete: ${result.name} (${Math.round(result.confidence * 100)}% confidence)`);
+  return result;
+}
+
+/**
+ * Determine authenticity risk from item authentication
+ */
+function determineRisk(auth: NonNullable<WorldClassResult['itemAuthentication']>): AuthenticityRisk {
+  if (auth.overallVerdict === 'likely_fake') return 'very_high';
+  if (auth.overallVerdict === 'likely_authentic' && auth.confidenceScore > 0.8) return 'low';
+  if (auth.failedChecks > 0) return 'high';
+  if (auth.inconclusiveChecks > auth.passedChecks) return 'medium';
+  return 'low';
 }
 
 // ============================================================================
-// EVENT EMITTER TYPE FOR SSE STREAMING
+// MAIN EXPORT FUNCTION
 // ============================================================================
 
-export type AnalysisEventEmitter = (event: {
-  type: string;
-  stage?: string;
-  message?: string;
-  progress?: number;
-  data?: unknown;
-}) => void;
-
-// ============================================================================
-// MAIN ORCHESTRATOR - OPTIMIZED WITH PARALLEL EXECUTION
-// ============================================================================
-
+/**
+ * Analyze item from one or more images
+ * @param imageBase64 - Primary image OR array of images with roles
+ * @param askingPrice - Optional asking price in cents
+ * @param emitEvent - Optional event emitter for progress
+ */
 export async function analyzeAntiqueImage(
-  imageBase64: string,
+  imageBase64: string | CapturedImage[],
   askingPrice?: number,
   emitEvent?: AnalysisEventEmitter
 ): Promise<WorldClassResult> {
-  const emit = emitEvent || (() => {}); // No-op if no emitter
+  const emit = emitEvent || (() => {});
 
   try {
-    // Validate image format
-    if (!imageBase64.startsWith('data:image/')) {
-      throw new ValidationError('Invalid image format. Must be a data URL.');
+    // Normalize to array of captured images
+    let images: CapturedImage[];
+    if (typeof imageBase64 === 'string') {
+      // Single image - validate format
+      if (!imageBase64.startsWith('data:image/')) {
+        throw new ValidationError('Invalid image format. Must be a data URL.');
+      }
+      const allowedFormats = ['data:image/jpeg', 'data:image/png', 'data:image/gif', 'data:image/webp'];
+      if (!allowedFormats.some(f => imageBase64.startsWith(f))) {
+        throw new ValidationError('Unsupported format. Use JPEG, PNG, GIF, or WebP.');
+      }
+      images = [{
+        id: 'primary',
+        dataUrl: imageBase64,
+        role: 'overview',
+        label: 'Primary Image',
+      }];
+    } else {
+      images = imageBase64;
     }
 
-    // Prevent SVG (potential XSS vector) and other non-image formats
-    const allowedFormats = ['data:image/jpeg', 'data:image/png', 'data:image/gif', 'data:image/webp'];
-    const hasAllowedFormat = allowedFormats.some(format => imageBase64.startsWith(format));
-    if (!hasAllowedFormat) {
-      throw new ValidationError('Unsupported image format. Please use JPEG, PNG, GIF, or WebP.');
-    }
-
-    // Validate image size (max 30MB base64 = ~22MB raw)
-    const MAX_BASE64_SIZE = 30 * 1024 * 1024; // 30MB
-    if (imageBase64.length > MAX_BASE64_SIZE) {
-      throw new ValidationError(`Image too large. Maximum size is approximately 22MB. Your image is approximately ${Math.round(imageBase64.length / 1024 / 1024 * 0.75)}MB.`);
+    // Validate size
+    const totalSize = images.reduce((sum, img) => sum + img.dataUrl.length, 0);
+    if (totalSize > 50 * 1024 * 1024) {
+      throw new ValidationError('Total image size too large. Maximum ~35MB.');
     }
 
     const startTime = Date.now();
     console.log('');
-    console.log('════════════════════════════════════════════════════════════════');
-    console.log('🏺 VINTAGEVISION v5.1 - OPTIMIZED PARALLEL PIPELINE (GPT-5.2)');
-    console.log('════════════════════════════════════════════════════════════════');
-    if (askingPrice) {
-      console.log(`💰 Asking Price: $${askingPrice / 100}`);
-    }
+    console.log('═══════════════════════════════════════════════════════════════');
+    console.log('🏺 VINTAGEVISION v2.0 - WORLD-CLASS ANALYSIS');
+    console.log(`📸 Analyzing ${images.length} image(s)`);
+    console.log('═══════════════════════════════════════════════════════════════');
 
-    // ========== STAGE 1: TRIAGE (Required first - determines expert domain) ==========
-    emit({ type: 'stage:start', stage: 'triage', message: 'Identifying item category...', progress: 5 });
-    const triage = await performTriage(imageBase64);
+    // Stage 1: Triage
+    emit({ type: 'stage:start', stage: 'triage', message: 'Identifying item...', progress: 5 });
+    const triage = await performTriage(images);
     emit({
       type: 'stage:complete',
       stage: 'triage',
-      message: 'Category identified',
+      message: `Identified as ${triage.itemType}`,
       progress: 20,
       data: {
         category: triage.category,
@@ -1642,586 +1327,143 @@ export async function analyzeAntiqueImage(
       },
     });
 
-    // ========== STAGES 2+3: PARALLEL EXECUTION ==========
-    // Evidence extraction and candidate generation can run in parallel
-    // since both only need triage data, not each other
-    console.log('⚡ Running Evidence + Candidates in PARALLEL...');
-    emit({ type: 'stage:start', stage: 'evidence', message: 'Examining maker marks and details...', progress: 25 });
-    emit({ type: 'stage:start', stage: 'candidates', message: 'Matching against knowledge base...', progress: 25 });
-
-    const [evidence, candidates] = await Promise.all([
-      extractEvidence(imageBase64, triage),
-      generateCandidatesParallel(imageBase64, triage), // Use parallel-safe version
-    ]);
-
-    emit({
-      type: 'stage:complete',
-      stage: 'evidence',
-      message: 'Evidence extracted',
-      progress: 45,
-      data: {
-        maker: evidence.makerIndicators.makerName,
-        condition: evidence.condition.overall,
-        textFound: evidence.visibleText.length,
-        redFlags: evidence.redFlags.length,
-      },
-    });
-
-    emit({
-      type: 'stage:complete',
-      stage: 'candidates',
-      message: `Found ${candidates.length} candidates`,
-      progress: 50,
-      data: candidates.slice(0, 3).map(c => ({
-        name: c.identification,
-        confidence: c.confidence,
-        value: c.valueEstimate,
-      })),
-    });
-
-    if (candidates.length === 0) {
-      throw new ExternalServiceError('Could not generate identification candidates', 'OpenAI');
-    }
-
-    // ========== STAGE 4: COMBINED FINAL ANALYSIS + AUTHENTICATION ==========
-    // These are combined into a single API call for efficiency
-    emit({ type: 'stage:start', stage: 'analysis', message: 'Generating comprehensive analysis...', progress: 55 });
-
-    const fullResult = await generateCombinedAnalysis(
-      imageBase64,
-      triage,
-      evidence,
-      candidates,
-      askingPrice
-    );
-
+    // Stage 2: Deep Analysis
+    emit({ type: 'stage:start', stage: 'analysis', message: 'Deep analysis in progress...', progress: 25 });
+    const result = await performDeepAnalysis(images, triage, askingPrice);
     emit({
       type: 'stage:complete',
       stage: 'analysis',
       message: 'Analysis complete',
-      progress: 95,
+      progress: 100,
       data: {
-        name: fullResult.name,
-        maker: fullResult.maker,
-        confidence: fullResult.confidence,
-        authConfidence: fullResult.authenticationConfidence,
-        valueMin: fullResult.estimatedValueMin,
-        valueMax: fullResult.estimatedValueMax,
+        name: result.name,
+        confidence: result.confidence,
+        value: result.estimatedValueMax,
       },
     });
 
-    // ========== COMPLETE ==========
-    const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
-    emit({ type: 'complete', progress: 100, data: fullResult });
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`⏱️  Completed in ${elapsed}s`);
+    console.log('═══════════════════════════════════════════════════════════════');
 
-    console.log('');
-    console.log('════════════════════════════════════════════════════════════════');
-    console.log(`✅ ANALYSIS COMPLETE in ${totalTime}s (optimized pipeline)`);
-    console.log(`   Item: ${fullResult.name}`);
-    if (fullResult.maker) console.log(`   Maker: ${fullResult.maker}`);
-    console.log(`   Era: ${fullResult.era || 'Unknown'}`);
-    console.log(`   ID Confidence: ${Math.round(fullResult.confidence * 100)}%`);
-    console.log(`   Auth Confidence: ${Math.round((fullResult.authenticationConfidence || 0) * 100)}%`);
-    console.log(`   Risk Level: ${fullResult.authenticityRisk || 'Unknown'}`);
-    if (fullResult.estimatedValueMin && fullResult.estimatedValueMax) {
-      console.log(`   Value: $${fullResult.estimatedValueMin} - $${fullResult.estimatedValueMax}`);
-    }
-    if (fullResult.dealRating) {
-      const emoji = fullResult.dealRating === 'exceptional' ? '🔥' :
-                    fullResult.dealRating === 'good' ? '✅' :
-                    fullResult.dealRating === 'fair' ? '➖' : '❌';
-      console.log(`   ${emoji} Deal Rating: ${fullResult.dealRating.toUpperCase()}`);
-    }
-    if (fullResult.flipDifficulty) {
-      console.log(`   Flip: ${fullResult.flipDifficulty} (${fullResult.flipTimeEstimate})`);
-    }
-    if (fullResult.expertReferralRecommended) {
-      console.log(`   ⚠️ EXPERT REFERRAL RECOMMENDED`);
-    }
-    console.log('════════════════════════════════════════════════════════════════');
-    console.log('');
+    return result;
 
-    return fullResult;
   } catch (error) {
-    emit({ type: 'error', message: error instanceof Error ? error.message : 'Analysis failed' });
-
-    if (error instanceof z.ZodError) {
-      console.error('❌ Validation error:', JSON.stringify(error.errors, null, 2));
-      throw new ValidationError('Analysis result validation failed');
-    }
-
-    if (error instanceof OpenAI.APIError) {
-      console.error('❌ OpenAI API error:', error.message);
-      throw new ExternalServiceError(`OpenAI API error: ${error.message}`, 'OpenAI');
-    }
-
+    console.error('❌ Analysis failed:', error);
+    emit({
+      type: 'error',
+      message: error instanceof Error ? error.message : 'Analysis failed',
+      progress: 0,
+    });
     throw error;
   }
 }
 
 // ============================================================================
-// PARALLEL-SAFE CANDIDATE GENERATION (doesn't need evidence)
+// SUPPLEMENTARY EXPORTS
 // ============================================================================
 
-async function generateCandidatesParallel(
-  imageBase64: string,
-  triage: z.infer<typeof TriageSchema>
-): Promise<z.infer<typeof CandidateSchema>[]> {
-  console.log('🎯 Stage 3 (Parallel): Generating identification candidates...');
+/**
+ * Check OpenAI API health
+ */
+export async function checkOpenAIHealth(): Promise<boolean> {
+  try {
+    const response = await openai.models.list();
+    return response.data.length > 0;
+  } catch (error) {
+    console.error('OpenAI health check failed:', error);
+    return false;
+  }
+}
 
-  const domainPrompt = DOMAIN_EXPERT_PROMPTS[triage.domainExpert];
+/**
+ * Generate marketplace search links
+ * Accepts multiple optional parameters for backward compatibility
+ */
+export function generateMarketplaceLinks(
+  name: string,
+  era?: string,
+  estimatedValueMin?: number,
+  productCategory?: ProductCategory,
+  brand?: string | null,
+  modelNumber?: string | null,
+  domainExpert?: string
+): { marketplaceName: string; linkUrl: string }[] {
+  // Build search terms with available info
+  const searchTerms = [brand, name].filter(Boolean).join(' ');
+  const encoded = encodeURIComponent(searchTerms);
+
+  return [
+    {
+      marketplaceName: 'eBay',
+      linkUrl: `https://www.ebay.com/sch/i.html?_nkw=${encoded}&_sop=12&LH_Complete=1&LH_Sold=1`,
+    },
+    {
+      marketplaceName: 'Chairish',
+      linkUrl: `https://www.chairish.com/search?q=${encoded}`,
+    },
+    {
+      marketplaceName: '1stDibs',
+      linkUrl: `https://www.1stdibs.com/search/?q=${encoded}`,
+    },
+    {
+      marketplaceName: 'Ruby Lane',
+      linkUrl: `https://www.rubylane.com/search?q=${encoded}`,
+    },
+    {
+      marketplaceName: 'Etsy',
+      linkUrl: `https://www.etsy.com/search?q=${encoded}`,
+    },
+  ];
+}
+
+/**
+ * Analyze additional photo to update existing analysis
+ */
+export async function analyzeAdditionalPhoto(
+  existingAnalysis: WorldClassResult,
+  newImage: CapturedImage
+): Promise<Partial<WorldClassResult>> {
+  console.log(`📸 Analyzing additional ${newImage.role} image...`);
 
   const response = await openai.chat.completions.create({
     model: VISION_MODEL,
     messages: [
       {
         role: 'system',
-        content: `${domainPrompt}
+        content: `You previously analyzed this item:
+Name: ${existingAnalysis.name}
+Maker: ${existingAnalysis.maker || 'Unknown'}
+Confidence: ${existingAnalysis.confidence}
 
----
+The user has provided a new ${newImage.role} image (${newImage.label}).
 
-Based on visual analysis, generate the TOP 3 most likely identifications.
+Analyze this new image and provide:
+1. Any NEW findings that update your previous analysis
+2. Changes to confidence levels
+3. Resolution of any "needs verification" items
+4. New visual markers for this image
 
-## ITEM CONTEXT:
-- Category: ${triage.category}
-- Item Type: ${triage.itemType}
-- Era: ${triage.estimatedEra || 'Unknown'}
-- Quality Tier: ${triage.qualityTier}
-- Visible Branding: ${triage.visibleBranding || 'None'}
-- Visible Model: ${triage.visibleModelNumber || 'None'}
-- All Visible Text: ${triage.allVisibleText?.join(', ') || 'None'}
-
-## YOUR TASK:
-Generate 3 candidates with supporting evidence. Look closely at the image for:
-- Maker marks, logos, signatures
-- Model numbers, serial numbers
-- Construction details
-- Style/period indicators
-
-## CONFIDENCE CALIBRATION:
-- 0.95+: Maker's mark clearly visible and matches known examples
-- 0.85-0.94: Strong construction/style evidence, consistent with known maker
-- 0.70-0.84: Style/period identified, maker narrowed to possibilities
-- 0.50-0.69: General identification solid, specifics uncertain
-- <0.50: Best guess based on limited evidence
-
-## VALUE ESTIMATION:
-Provide realistic market values based on recent auction results, dealer prices, online marketplaces.
-
-Respond in JSON:
-{
-  "candidates": [
-    {
-      "rank": 1,
-      "identification": "Full specific identification",
-      "maker": "Maker name or null",
-      "model": "Model/pattern or null",
-      "period": "Date range",
-      "confidence": 0.0-1.0,
-      "evidenceFor": ["evidence supporting"],
-      "evidenceAgainst": ["evidence against"],
-      "valueEstimate": {
-        "low": USD,
-        "high": USD,
-        "basis": "How estimated"
-      }
-    }
-  ]
-}`,
+Respond in JSON with only the CHANGED fields.`,
       },
       {
         role: 'user',
         content: [
-          {
-            type: 'text',
-            text: 'Generate the top 3 identification candidates with evidence and values. Examine the image carefully for all text, marks, and details:',
-          },
-          { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } },
+          { type: 'text', text: `Analyze this ${newImage.label} and tell me what new information it provides:` },
+          { type: 'image_url', image_url: { url: newImage.dataUrl, detail: 'high' } },
         ],
       },
     ],
-    max_completion_tokens: 2500,
+    max_tokens: 2000,
     temperature: 0.2,
     response_format: { type: 'json_object' },
   });
 
   const content = response.choices[0]?.message?.content;
-  if (!content) throw new ExternalServiceError('No candidates response', 'OpenAI');
+  if (!content) throw new ExternalServiceError('No response', 'OpenAI');
 
-  const parsed = safeJsonParse(content, 'candidates') as { candidates?: unknown[] };
-  const candidates = z.array(CandidateSchema).parse(parsed.candidates || []);
-
-  for (const c of candidates) {
-    console.log(`   #${c.rank}: ${c.identification} (${Math.round(c.confidence * 100)}%)`);
-    if (c.valueEstimate.low && c.valueEstimate.high) {
-      console.log(`       Value: $${c.valueEstimate.low} - $${c.valueEstimate.high}`);
-    }
-  }
-
-  return candidates;
+  return safeJsonParse(content, 'additional_photo') as Partial<WorldClassResult>;
 }
 
-// ============================================================================
-// COMBINED FINAL ANALYSIS + AUTHENTICATION (Single API Call)
-// ============================================================================
-
-async function generateCombinedAnalysis(
-  imageBase64: string,
-  triage: z.infer<typeof TriageSchema>,
-  evidence: z.infer<typeof EvidenceSchema>,
-  candidates: z.infer<typeof CandidateSchema>[],
-  askingPrice?: number
-): Promise<WorldClassResult> {
-  console.log('✨ Stage 4: Combined Analysis + Authentication (single call)...');
-
-  const topCandidate = candidates[0];
-  const alternatives = candidates.slice(1);
-  const domainPrompt = DOMAIN_EXPERT_PROMPTS[triage.domainExpert];
-
-  // Determine authentication risk
-  const HIGH_COUNTERFEIT_RISK: Record<string, AuthenticityRisk> = {
-    watches: 'very_high',
-    jewelry: 'high',
-    art: 'high',
-    silver: 'medium',
-    ceramics: 'medium',
-    furniture: 'medium',
-    glass: 'medium',
-    textiles: 'low',
-    toys: 'low',
-    books: 'low',
-    tools: 'low',
-    lighting: 'medium',
-    electronics: 'low',
-    vehicles: 'low',
-    general: 'low',
-  };
-
-  const baseRisk = HIGH_COUNTERFEIT_RISK[triage.domainExpert] || 'low';
-  const isLuxuryBrand = topCandidate.maker?.toLowerCase().match(
-    /rolex|patek|omega|cartier|tiffany|louis vuitton|hermes|chanel|audemars|vacheron|breguet/
-  );
-  const isHighValue = (topCandidate.valueEstimate.high || 0) > 5000;
-
-  let adjustedRisk = baseRisk;
-  if (isLuxuryBrand || isHighValue) {
-    if (baseRisk === 'low') adjustedRisk = 'medium';
-    else if (baseRisk === 'medium') adjustedRisk = 'high';
-    else if (baseRisk === 'high') adjustedRisk = 'very_high';
-  }
-
-  const response = await openai.chat.completions.create({
-    model: VISION_MODEL,
-    messages: [
-      {
-        role: 'system',
-        content: `${domainPrompt}
-
----
-
-You are finalizing a COMBINED analysis and authentication for this item.
-
-## TOP CANDIDATE:
-${JSON.stringify(topCandidate, null, 2)}
-
-## ALTERNATIVES:
-${JSON.stringify(alternatives, null, 2)}
-
-## EXTRACTED EVIDENCE:
-${JSON.stringify(evidence, null, 2)}
-
-## TRIAGE DATA:
-${JSON.stringify(triage, null, 2)}
-
-${askingPrice ? `## ASKING PRICE: $${askingPrice / 100}` : ''}
-
-## BASE COUNTERFEIT RISK: ${adjustedRisk}
-
-## YOUR TASK:
-Generate a COMBINED response with BOTH identification analysis AND authentication assessment.
-
-### PART 1: IDENTIFICATION ANALYSIS
-- Confirm/refine top candidate
-- Historical context (3-4 paragraphs)
-- Market valuation with reasoning
-- Comparable sales references
-- Resale assessment
-
-### PART 2: AUTHENTICATION ANALYSIS
-- Authentication confidence (0-1): How confident this is AUTHENTIC
-- Domain-specific verification checklist (5-8 checks)
-- Known fake indicators for this specific item
-- Additional photos that would help verify
-- Expert referral recommendation
-
-## DEAL RATING (if asking price provided):
-- "exceptional": 50%+ below market
-- "good": 20-50% below market
-- "fair": Within 20% of market
-- "overpriced": Above market
-
-Respond in JSON with this structure:
-{
-  // Identification fields
-  "name": "Full specific name",
-  "maker": "Maker or null",
-  "modelNumber": "Model or null",
-  "brand": "Brand or null",
-  "productCategory": "${triage.category}",
-  "domainExpert": "${triage.domainExpert}",
-  "itemSubcategory": "Subcategory",
-  "era": "Period description",
-  "style": "Style/movement",
-  "periodStart": year_or_null,
-  "periodEnd": year_or_null,
-  "originRegion": "Region",
-  "description": "Physical description",
-  "historicalContext": "Rich historical narrative",
-  "attributionNotes": "Attribution notes",
-  "estimatedValueMin": USD,
-  "estimatedValueMax": USD,
-  "currentRetailPrice": null,
-  "comparableSales": [...],
-  "confidence": 0-1,
-  "identificationConfidence": 0-1,
-  "makerConfidence": 0-1,
-  "evidenceFor": [...],
-  "evidenceAgainst": [...],
-  "alternativeCandidates": [...],
-  "verificationTips": [...],
-  "redFlags": [...],
-  "flipDifficulty": "easy|moderate|hard|very_hard",
-  "flipTimeEstimate": "timeline",
-  "resaleChannels": [...],
-  "stylingSuggestions": [...],
-
-  // Authentication fields (REQUIRED)
-  "authenticationConfidence": 0-1,
-  "authenticityRisk": "low|medium|high|very_high",
-  "authenticationChecklist": [
-    {
-      "id": "check-1",
-      "category": "visual|physical|documentation|provenance",
-      "priority": "critical|important|helpful",
-      "check": "What to verify",
-      "howTo": "How to check",
-      "whatToLookFor": "Signs of authenticity",
-      "redFlagSigns": ["Fake indicators"],
-      "requiresExpert": boolean,
-      "photoHelpful": boolean
-    }
-  ],
-  "knownFakeIndicators": ["What fakes show"],
-  "additionalPhotosRequested": [
-    {
-      "id": "photo-1",
-      "area": "Specific area",
-      "reason": "Why helpful",
-      "whatToCapture": "Instructions",
-      "priority": "required|recommended|optional"
-    }
-  ],
-  "expertReferralRecommended": boolean,
-  "expertReferralReason": "Reason or null",
-  "authenticationAssessment": "Summary of authentication status"
-}`,
-      },
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text: `Generate the COMBINED final analysis and authentication${askingPrice ? ` with deal assessment for $${askingPrice / 100}` : ''}. Include both identification details AND authentication checklist.`,
-          },
-          { type: 'image_url', image_url: { url: imageBase64, detail: 'high' } },
-        ],
-      },
-    ],
-    max_completion_tokens: 6000, // Larger for combined response
-    temperature: 0.3,
-    response_format: { type: 'json_object' },
-  });
-
-  const content = response.choices[0]?.message?.content;
-  if (!content) throw new ExternalServiceError('No combined analysis response', 'OpenAI');
-
-  const parsed = safeJsonParse(content, 'combined-analysis') as Record<string, unknown>;
-
-  // Validate core analysis fields
-  const analysis = WorldClassAnalysisSchema.parse(parsed);
-
-  // Extract authentication fields
-  const authenticationConfidence = typeof parsed.authenticationConfidence === 'number'
-    ? parsed.authenticationConfidence
-    : 0.5;
-  const authenticityRisk = ['low', 'medium', 'high', 'very_high'].includes(parsed.authenticityRisk as string)
-    ? (parsed.authenticityRisk as AuthenticityRisk)
-    : adjustedRisk;
-  const authenticationChecklist = Array.isArray(parsed.authenticationChecklist)
-    ? (parsed.authenticationChecklist as AuthenticationCheck[])
-    : [];
-  const knownFakeIndicators = Array.isArray(parsed.knownFakeIndicators)
-    ? (parsed.knownFakeIndicators as string[])
-    : [];
-  const additionalPhotosRequested = Array.isArray(parsed.additionalPhotosRequested)
-    ? (parsed.additionalPhotosRequested as PhotoRequest[])
-    : [];
-  const expertReferralRecommended = typeof parsed.expertReferralRecommended === 'boolean'
-    ? parsed.expertReferralRecommended
-    : false;
-  const expertReferralReason = typeof parsed.expertReferralReason === 'string'
-    ? parsed.expertReferralReason
-    : null;
-  const authenticationAssessment = typeof parsed.authenticationAssessment === 'string'
-    ? parsed.authenticationAssessment
-    : null;
-
-  console.log(`🔐 Authentication Confidence: ${Math.round(authenticationConfidence * 100)}%`);
-  console.log(`⚠️ Risk Level: ${authenticityRisk}`);
-  console.log(`📋 Checklist Items: ${authenticationChecklist.length}`);
-  console.log(`📸 Photos Requested: ${additionalPhotosRequested.length}`);
-  if (expertReferralRecommended) {
-    console.log(`👨‍🔬 Expert Referral: Recommended`);
-  }
-
-  // Calculate deal analysis if asking price provided
-  let dealAnalysis: Partial<WorldClassResult> = {};
-  if (askingPrice && analysis.estimatedValueMin && analysis.estimatedValueMax) {
-    const marketMid = (analysis.estimatedValueMin + analysis.estimatedValueMax) / 2;
-
-    if (marketMid > 0) {
-      const askingDollars = askingPrice / 100;
-      const percentOfMarket = (askingDollars / marketMid) * 100;
-
-      let dealRating: DealRating;
-      let dealExplanation: string;
-
-      if (percentOfMarket <= 50) {
-        dealRating = 'exceptional';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is ${Math.round(100 - percentOfMarket)}% below market value. Exceptional find!`;
-      } else if (percentOfMarket <= 80) {
-        dealRating = 'good';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is ${Math.round(100 - percentOfMarket)}% below market value. Solid deal.`;
-      } else if (percentOfMarket <= 120) {
-        dealRating = 'fair';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is within market range. Fair price.`;
-      } else {
-        dealRating = 'overpriced';
-        dealExplanation = `At $${askingDollars.toLocaleString()}, this is ${Math.round(percentOfMarket - 100)}% above market value.`;
-      }
-
-      dealAnalysis = {
-        askingPrice,
-        dealRating,
-        dealExplanation,
-        profitPotentialMin: Math.round(analysis.estimatedValueMin - askingDollars),
-        profitPotentialMax: Math.round(analysis.estimatedValueMax - askingDollars),
-      };
-    }
-  }
-
-  return {
-    ...analysis,
-    ...dealAnalysis,
-    authenticationConfidence,
-    authenticityRisk,
-    authenticationChecklist,
-    knownFakeIndicators,
-    additionalPhotosRequested,
-    expertReferralRecommended,
-    expertReferralReason,
-    authenticationAssessment,
-  };
-}
-
-// ============================================================================
-// MARKETPLACE LINKS
-// ============================================================================
-
-export function generateMarketplaceLinks(
-  itemName: string,
-  era?: string,
-  estimatedValueMin?: number,
-  productCategory?: ProductCategory,
-  brand?: string,
-  modelNumber?: string,
-  domainExpert?: string
-) {
-  const isModernProduct = productCategory === 'modern_branded' || productCategory === 'modern_generic';
-
-  if (isModernProduct) {
-    const searchTerm = brand && modelNumber
-      ? encodeURIComponent(`${brand} ${modelNumber}`)
-      : encodeURIComponent(itemName);
-
-    return [
-      { marketplaceName: 'Amazon', linkUrl: `https://www.amazon.com/s?k=${searchTerm}` },
-      { marketplaceName: 'Best Buy', linkUrl: `https://www.bestbuy.com/site/searchpage.jsp?st=${searchTerm}` },
-      { marketplaceName: 'eBay', linkUrl: `https://www.ebay.com/sch/i.html?_nkw=${searchTerm}` },
-      { marketplaceName: 'Walmart', linkUrl: `https://www.walmart.com/search?q=${searchTerm}` },
-    ];
-  }
-
-  // Antique/vintage items - domain-specific marketplaces
-  const searchTerm = encodeURIComponent(`${itemName} ${era || ''}`);
-  const priceFilter = estimatedValueMin ? `&_udlo=${Math.round(estimatedValueMin * 0.5)}` : '';
-
-  const links = [
-    { marketplaceName: 'eBay', linkUrl: `https://www.ebay.com/sch/i.html?_nkw=${searchTerm}${priceFilter}&LH_Complete=1&LH_Sold=1` },
-    { marketplaceName: 'Etsy', linkUrl: `https://www.etsy.com/search?q=${searchTerm}` },
-  ];
-
-  // Domain-specific additions
-  if (domainExpert === 'furniture') {
-    links.push(
-      { marketplaceName: 'Chairish', linkUrl: `https://www.chairish.com/search?q=${searchTerm}` },
-      { marketplaceName: '1stDibs', linkUrl: `https://www.1stdibs.com/search/?q=${searchTerm}` }
-    );
-  } else if (domainExpert === 'art') {
-    links.push(
-      { marketplaceName: 'Artnet', linkUrl: `https://www.artnet.com/search/?q=${searchTerm}` },
-      { marketplaceName: '1stDibs', linkUrl: `https://www.1stdibs.com/search/?q=${searchTerm}` }
-    );
-  } else if (domainExpert === 'jewelry' || domainExpert === 'watches') {
-    links.push(
-      { marketplaceName: '1stDibs', linkUrl: `https://www.1stdibs.com/search/?q=${searchTerm}` },
-      { marketplaceName: 'Ruby Lane', linkUrl: `https://www.rubylane.com/search?q=${searchTerm}` }
-    );
-  } else if (domainExpert === 'ceramics' || domainExpert === 'glass') {
-    links.push(
-      { marketplaceName: 'Replacements', linkUrl: `https://www.replacements.com/search?query=${searchTerm}` },
-      { marketplaceName: 'Ruby Lane', linkUrl: `https://www.rubylane.com/search?q=${searchTerm}` }
-    );
-  } else if (domainExpert === 'books') {
-    links.push(
-      { marketplaceName: 'AbeBooks', linkUrl: `https://www.abebooks.com/servlet/SearchResults?kn=${searchTerm}` },
-      { marketplaceName: 'Biblio', linkUrl: `https://www.biblio.com/search.php?keyisbn=${searchTerm}` }
-    );
-  } else {
-    links.push(
-      { marketplaceName: 'Ruby Lane', linkUrl: `https://www.rubylane.com/search?q=${searchTerm}` },
-      { marketplaceName: '1stDibs', linkUrl: `https://www.1stdibs.com/search/?q=${searchTerm}` }
-    );
-  }
-
-  return links;
-}
-
-// ============================================================================
-// HEALTH CHECK
-// ============================================================================
-
-export async function checkOpenAIHealth(): Promise<boolean> {
-  try {
-    const timeout = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Timeout')), 5000)
-    );
-    const check = openai.models.list();
-    const response = await Promise.race([check, timeout]);
-    return response.data.length > 0;
-  } catch {
-    return false;
-  }
-}
-
-console.log('✅ OpenAI service initialized (World-Class Treasure Hunting v5.0 - GPT-5.2)');
+// Type alias for external use
+export type ItemAnalysis = WorldClassResult;

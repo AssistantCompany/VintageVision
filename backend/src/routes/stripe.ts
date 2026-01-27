@@ -70,6 +70,47 @@ function getSubscriptionPeriodEnd(subscription: Stripe.Subscription): Date | nul
   return null;
 }
 
+/**
+ * Safely extract string ID from a value that may be a string or an object with id property.
+ * Used for Stripe API responses where customer/subscription can be string or expanded object.
+ * Handles Stripe types including DeletedCustomer which also has an id.
+ */
+function extractStringId(value: string | { id: string } | null | undefined): string | null {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && 'id' in value) return value.id;
+  return null;
+}
+
+/**
+ * Find user by subscription metadata or customer ID.
+ * Tries metadata.userId first, then falls back to stripeCustomerId lookup.
+ */
+async function findUserBySubscriptionOrCustomer(
+  subscriptionOrCustomer: {
+    metadata?: { userId?: string };
+    customer?: string | Stripe.Customer | Stripe.DeletedCustomer;
+  }
+): Promise<typeof users.$inferSelect | null> {
+  // Try metadata first
+  const userId = subscriptionOrCustomer.metadata?.userId;
+  if (userId) {
+    const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (user) return user;
+  }
+
+  // Fallback to customer ID
+  const customerId = extractStringId(subscriptionOrCustomer.customer);
+
+  if (customerId) {
+    const [user] = await db.select().from(users)
+      .where(eq(users.stripeCustomerId, customerId))
+      .limit(1);
+    return user || null;
+  }
+
+  return null;
+}
+
 // ============================================================================
 // CREATE CHECKOUT SESSION
 // ============================================================================
@@ -114,6 +155,8 @@ stripeRoutes.post('/create-checkout-session', requireAuth, async (c) => {
         metadata: {
           userId: user.id,
         },
+      }, {
+        idempotencyKey: `customer-${user.id}`,
       });
       customerId = customer.id;
 
@@ -202,9 +245,14 @@ stripeRoutes.post('/webhooks/stripe', async (c) => {
     try {
       event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      logger.error(`Webhook signature verification failed: ${errorMessage}`);
-      return c.json({ success: false, error: 'Invalid signature' }, 400);
+      // Distinguish client errors (bad signature/timestamp) from server errors
+      if (err instanceof Error &&
+          (err.message.includes('signature') || err.message.includes('timestamp'))) {
+        logger.error(`Webhook signature verification failed: ${err.message}`);
+        return c.json({ success: false, error: 'Invalid signature' }, 400);
+      }
+      // Otherwise it's a server error - let it propagate (500)
+      throw err;
     }
 
     logger.info(`Stripe webhook received: ${event.type}`);
@@ -257,15 +305,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
   if (!userId || !planId) {
     logger.error('Missing metadata in checkout session', { sessionId: session.id });
-    return;
+    throw new Error(`Missing required metadata in checkout session ${session.id}`);
   }
 
   logger.info(`Checkout completed for user ${userId}, plan: ${planId}`);
 
   // Get subscription details
-  const subscriptionId = session.subscription as string;
+  const subscriptionId = extractStringId(session.subscription);
 
-  if (!stripe) return;
+  if (!stripe) {
+    throw new Error('Stripe client not initialized');
+  }
+
+  if (!subscriptionId) {
+    throw new Error(`Missing subscription ID in checkout session ${session.id}`);
+  }
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
   const currentPeriodEnd = getSubscriptionPeriodEnd(subscription);
@@ -285,50 +339,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 }
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
-  const userId = subscription.metadata?.userId;
+  // Use helper function to find user by metadata or customer ID
+  const user = await findUserBySubscriptionOrCustomer(subscription);
 
-  if (!userId) {
-    // Try to find user by customer ID
-    const customerId = subscription.customer as string;
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.stripeCustomerId, customerId))
-      .limit(1);
-
-    if (!user) {
-      logger.error('Could not find user for subscription update', {
-        subscriptionId: subscription.id,
-        customerId,
-      });
-      return;
-    }
-
-    // Update with user we found
-    const currentPeriodEnd = getSubscriptionPeriodEnd(subscription);
-    const planId = subscription.metadata?.planId || user.subscriptionTier;
-
-    // Handle subscription status
-    let subscriptionTier = planId;
-    if (subscription.status === 'canceled' || subscription.status === 'unpaid') {
-      subscriptionTier = 'free';
-    }
-
-    await db
-      .update(users)
-      .set({
-        subscriptionTier,
-        subscriptionEndsAt: currentPeriodEnd,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, user.id));
-
-    logger.info(`Subscription updated for user ${user.email}: ${subscriptionTier}`);
-    return;
+  if (!user) {
+    const customerId = extractStringId(subscription.customer);
+    logger.error('Could not find user for subscription update', {
+      subscriptionId: subscription.id,
+      customerId,
+    });
+    throw new Error(`Could not find user for subscription update: ${subscription.id}`);
   }
 
   const currentPeriodEnd = getSubscriptionPeriodEnd(subscription);
-  const planId = subscription.metadata?.planId;
+  const planId = subscription.metadata?.planId || user.subscriptionTier;
 
   // Handle subscription status
   let subscriptionTier = planId;
@@ -343,48 +367,35 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
       subscriptionEndsAt: currentPeriodEnd,
       updatedAt: new Date(),
     })
-    .where(eq(users.id, userId));
+    .where(eq(users.id, user.id));
 
-  logger.info(`Subscription updated for user ${userId}: ${subscriptionTier}`);
+  logger.info(`Subscription updated for user ${user.email}: ${subscriptionTier}`);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
-  // Find user by subscription ID
-  const [user] = await db
+  // Try to find user by subscription ID first
+  let user: typeof users.$inferSelect | null = null;
+
+  const [userBySubscription] = await db
     .select()
     .from(users)
     .where(eq(users.stripeSubscriptionId, subscription.id))
     .limit(1);
 
+  if (userBySubscription) {
+    user = userBySubscription;
+  } else {
+    // Fallback to helper function (metadata or customer ID)
+    user = await findUserBySubscriptionOrCustomer(subscription);
+  }
+
   if (!user) {
-    // Try by customer ID
-    const customerId = subscription.customer as string;
-    const [userByCustomer] = await db
-      .select()
-      .from(users)
-      .where(eq(users.stripeCustomerId, customerId))
-      .limit(1);
-
-    if (!userByCustomer) {
-      logger.error('Could not find user for subscription deletion', {
-        subscriptionId: subscription.id,
-      });
-      return;
-    }
-
-    // Downgrade to free
-    await db
-      .update(users)
-      .set({
-        subscriptionTier: 'free',
-        stripeSubscriptionId: null,
-        subscriptionEndsAt: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(users.id, userByCustomer.id));
-
-    logger.info(`Subscription deleted for user ${userByCustomer.email}, downgraded to free`);
-    return;
+    const customerId = extractStringId(subscription.customer);
+    logger.error('Could not find user for subscription deletion', {
+      subscriptionId: subscription.id,
+      customerId,
+    });
+    throw new Error(`Could not find user for subscription deletion: ${subscription.id}`);
   }
 
   // Downgrade to free
@@ -402,7 +413,12 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-  const customerId = invoice.customer as string;
+  const customerId = extractStringId(invoice.customer);
+
+  if (!customerId) {
+    logger.warn(`Payment failed with no customer ID, invoice: ${invoice.id}`);
+    return; // Not throwing here since payment failure doesn't need retry
+  }
 
   const [user] = await db
     .select()
@@ -413,6 +429,9 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   if (user) {
     logger.warn(`Payment failed for user ${user.email}, invoice: ${invoice.id}`);
     // Could send notification email here, or mark user as having payment issues
+  } else {
+    logger.warn(`Payment failed but user not found for customer ${customerId}, invoice: ${invoice.id}`);
+    // Not throwing here since this is informational and doesn't need retry
   }
 }
 

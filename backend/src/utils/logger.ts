@@ -46,6 +46,36 @@ function shouldLog(level: LogLevel): boolean {
   return LOG_LEVELS[level] >= currentLevel;
 }
 
+export type { LogContext };
+
+/**
+ * Create a namespaced logger
+ */
+export function createLogger(namespace: string) {
+  return {
+    debug(message: string, context?: LogContext): void {
+      if (DEBUG || shouldLog('debug')) {
+        console.debug(formatMessage('debug', `[${namespace}] ${message}`, context));
+      }
+    },
+    info(message: string, context?: LogContext): void {
+      if (shouldLog('info')) {
+        console.log(formatMessage('info', `[${namespace}] ${message}`, context));
+      }
+    },
+    warn(message: string, context?: LogContext): void {
+      if (shouldLog('warn')) {
+        console.warn(formatMessage('warn', `[${namespace}] ${message}`, context));
+      }
+    },
+    error(message: string, context?: LogContext): void {
+      if (shouldLog('error')) {
+        console.error(formatMessage('error', `[${namespace}] ${message}`, context));
+      }
+    }
+  };
+}
+
 export const logger = {
   debug(message: string, context?: LogContext): void {
     if (DEBUG || shouldLog('debug')) {
