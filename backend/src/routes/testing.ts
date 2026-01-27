@@ -107,7 +107,7 @@ testingRouter.post('/run', async (c) => {
 testingRouter.post('/ground-truth/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const item = GROUND_TRUTH_ITEMS.find(i => i.id === id);
+    const item = GROUND_TRUTH_ITEMS.find((i: { id: string }) => i.id === id);
 
     if (!item) {
       return c.json({ error: `Ground truth item ${id} not found` }, 404);
@@ -134,7 +134,7 @@ testingRouter.post('/ground-truth/:id', async (c) => {
  * List all ground truth items
  */
 testingRouter.get('/ground-truth', (c) => {
-  const items = GROUND_TRUTH_ITEMS.map(item => ({
+  const items = GROUND_TRUTH_ITEMS.map((item: any) => ({
     id: item.id,
     name: item.expected.name,
     category: item.expected.domainExpert,
@@ -145,14 +145,14 @@ testingRouter.get('/ground-truth', (c) => {
   return c.json({
     count: items.length,
     items,
-    byCateory: items.reduce((acc, item) => {
+    byCateory: items.reduce((acc: Record<string, number>, item: any) => {
       acc[item.category] = (acc[item.category] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>),
-    byDifficulty: items.reduce((acc, item) => {
+    }, {}),
+    byDifficulty: items.reduce((acc: Record<string, number>, item: any) => {
       acc[item.difficulty] = (acc[item.difficulty] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>)
+    }, {})
   });
 });
 
@@ -164,14 +164,14 @@ testingRouter.get('/criteria', (c) => {
   return c.json({
     count: ANALYSIS_SUCCESS_CRITERIA.length,
     criteria: ANALYSIS_SUCCESS_CRITERIA,
-    byCategory: ANALYSIS_SUCCESS_CRITERIA.reduce((acc, c) => {
+    byCategory: ANALYSIS_SUCCESS_CRITERIA.reduce((acc: Record<string, number>, c: any) => {
       acc[c.category] = (acc[c.category] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>),
-    byPriority: ANALYSIS_SUCCESS_CRITERIA.reduce((acc, c) => {
+    }, {}),
+    byPriority: ANALYSIS_SUCCESS_CRITERIA.reduce((acc: Record<string, number>, c: any) => {
       acc[c.priority] = (acc[c.priority] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>)
+    }, {})
   });
 });
 
@@ -182,7 +182,7 @@ testingRouter.get('/criteria', (c) => {
 testingRouter.get('/journeys', (c) => {
   return c.json({
     count: USER_JOURNEYS.length,
-    journeys: USER_JOURNEYS.map(j => ({
+    journeys: USER_JOURNEYS.map((j: any) => ({
       id: j.id,
       name: j.name,
       persona: j.persona,
@@ -199,7 +199,7 @@ testingRouter.get('/journeys', (c) => {
 testingRouter.get('/e2e-tests', (c) => {
   return c.json({
     count: E2E_TEST_CASES.length,
-    tests: E2E_TEST_CASES.map(t => ({
+    tests: E2E_TEST_CASES.map((t: any) => ({
       id: t.id,
       name: t.name,
       type: t.type,
@@ -207,10 +207,10 @@ testingRouter.get('/e2e-tests', (c) => {
       automated: t.automated,
       criteriaCount: t.criteriaIds.length
     })),
-    byType: E2E_TEST_CASES.reduce((acc, t) => {
+    byType: E2E_TEST_CASES.reduce((acc: Record<string, number>, t: any) => {
       acc[t.type] = (acc[t.type] || 0) + 1;
       return acc;
-    }, {} as Record<string, number>)
+    }, {})
   });
 });
 
