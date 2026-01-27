@@ -6,6 +6,7 @@
 
 import { useState, useCallback, useRef } from 'react'
 import { ItemAnalysis } from '@/types'
+import { formatErrorMessage } from '@/lib/utils'
 
 export type AnalysisStage = 'idle' | 'upload' | 'triage' | 'evidence' | 'candidates' | 'analysis' | 'complete' | 'error'
 
@@ -68,7 +69,11 @@ export function useAnalysisStream() {
   const abortControllerRef = useRef<AbortController | null>(null)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
-  const startAnalysis = useCallback(async (imageData: string, askingPrice?: number): Promise<ItemAnalysis | null> => {
+  const startAnalysis = useCallback(async (
+    imageData: string,
+    askingPrice?: number,
+    consensusMode: 'auto' | 'always' | 'never' = 'auto'
+  ): Promise<ItemAnalysis | null> => {
     // Abort any existing analysis
     if (abortControllerRef.current) {
       abortControllerRef.current.abort()
@@ -118,13 +123,15 @@ export function useAnalysisStream() {
         if (timerRef.current) {
           clearInterval(timerRef.current)
         }
+        const userFriendlyError = formatErrorMessage(error)
         setProgress(prev => ({
           ...prev,
           stage: 'error',
-          error,
-          message: error,
+          error: userFriendlyError,
+          message: userFriendlyError,
         }))
-        reject(new Error(error))
+        console.error('❌ Analysis failed:', error) // Keep technical error in console
+        reject(new Error(userFriendlyError))
       }
 
       // Use regular fetch with POST body, then read as event stream
@@ -136,6 +143,7 @@ export function useAnalysisStream() {
         body: JSON.stringify({
           image: imageData,
           askingPrice,
+          consensusMode,
         }),
         signal: abortControllerRef.current?.signal,
       })

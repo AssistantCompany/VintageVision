@@ -32,7 +32,6 @@ export default defineConfig({
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
           'animation-vendor': ['framer-motion', '@react-spring/web'],
-          '3d-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
           'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@headlessui/react'],
         },
       },

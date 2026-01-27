@@ -32,9 +32,9 @@ export function useOnboarding(): UseOnboardingReturn {
         const stored = localStorage.getItem(ONBOARDING_STORAGE_KEY)
         setHasCompletedOnboarding(stored === 'true')
       } catch (error) {
-        // localStorage might not be available
+        // localStorage might not be available - show onboarding anyway
         console.warn('[Onboarding] Could not access localStorage:', error)
-        setHasCompletedOnboarding(true) // Default to completed if storage fails
+        setHasCompletedOnboarding(false)
       } finally {
         setIsLoading(false)
       }

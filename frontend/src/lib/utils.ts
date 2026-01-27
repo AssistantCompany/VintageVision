@@ -157,36 +157,66 @@ export function compressImage(
   file: File,
   maxWidth: number = 1920,
   maxHeight: number = 1080,
-  quality: number = 0.8
+  quality: number = 0.85
 ): Promise<Blob> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, _reject) => {
+    // If file is already small (under 500KB), skip compression
+    if (file.size < 500 * 1024) {
+      console.log('📎 File already small, skipping compression')
+      resolve(file)
+      return
+    }
+
     const canvas = document.createElement('canvas')
     const ctx = canvas.getContext('2d')
     const img = new Image()
 
     img.onload = () => {
       const { width, height } = img
-      const ratio = Math.min(maxWidth / width, maxHeight / height)
-      
+
+      // Only resize if image exceeds max dimensions
+      const needsResize = width > maxWidth || height > maxHeight
+      const ratio = needsResize
+        ? Math.min(maxWidth / width, maxHeight / height)
+        : 1
+
       canvas.width = width * ratio
       canvas.height = height * ratio
 
       ctx?.drawImage(img, 0, 0, canvas.width, canvas.height)
-      
+
+      // Try JPEG compression
       canvas.toBlob(
-        (blob) => {
-          if (blob) {
-            resolve(blob)
+        (compressedBlob) => {
+          if (compressedBlob) {
+            // Only use compressed version if it's actually smaller
+            if (compressedBlob.size < file.size) {
+              console.log('✅ Compression effective:', {
+                original: (file.size / 1024).toFixed(0) + 'KB',
+                compressed: (compressedBlob.size / 1024).toFixed(0) + 'KB',
+                savings: ((1 - compressedBlob.size / file.size) * 100).toFixed(1) + '%'
+              })
+              resolve(compressedBlob)
+            } else {
+              console.log('⚠️ Compression not beneficial, using original')
+              resolve(file)
+            }
           } else {
-            reject(new Error('Failed to compress image'))
+            // Fallback to original file
+            console.log('⚠️ Compression failed, using original')
+            resolve(file)
           }
         },
         'image/jpeg',
         quality
       )
     }
-    
-    img.onerror = reject
+
+    img.onerror = () => {
+      // On error, return original file
+      console.log('⚠️ Image load failed, using original')
+      resolve(file)
+    }
     img.src = URL.createObjectURL(file)
   })
 }
@@ -281,4 +311,45 @@ export function getPerformanceMetrics() {
     }
   }
   return null
+}
+
+/**
+ * Convert technical error messages to user-friendly text
+ */
+export function formatErrorMessage(error: string): string {
+  // Handle JSON validation errors from Zod
+  if (error.includes('invalid_enum_value') || error.includes('"code":')) {
+    return 'Analysis encountered an unexpected response. Please try again.'
+  }
+
+  // Handle HTTP errors
+  if (error.includes('HTTP 5')) {
+    return 'Our servers are temporarily busy. Please try again in a moment.'
+  }
+  if (error.includes('HTTP 4')) {
+    return 'Unable to process your request. Please try a different image.'
+  }
+
+  // Handle network errors
+  if (error.includes('fetch') || error.includes('network') || error.includes('Failed to fetch')) {
+    return 'Connection lost. Please check your internet and try again.'
+  }
+
+  // Handle timeout
+  if (error.includes('timeout') || error.includes('Timeout')) {
+    return 'Analysis took too long. Please try again with a clearer image.'
+  }
+
+  // Handle cancellation
+  if (error.includes('cancelled') || error.includes('aborted')) {
+    return 'Analysis was cancelled.'
+  }
+
+  // If already user-friendly (short, no technical terms), keep it
+  if (error.length < 100 && !error.includes('{') && !error.includes('Error:')) {
+    return error
+  }
+
+  // Default fallback
+  return 'Something went wrong. Please try again.'
 }

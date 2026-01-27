@@ -1,15 +1,20 @@
 import { useState, useCallback } from 'react'
-import { ItemAnalysis } from '@/types'
+import { ItemAnalysis, CapturedImage } from '@/types'
 
 export function useVintageAnalysis() {
   const [analyzing, setAnalyzing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const analyzeItem = useCallback(async (dataUrl: string, askingPrice?: number): Promise<ItemAnalysis | null> => {
+  const analyzeItem = useCallback(async (
+    dataUrl: string,
+    askingPrice?: number,
+    consensusMode: 'auto' | 'always' | 'never' = 'auto'
+  ): Promise<ItemAnalysis | null> => {
     console.log('🔬 analyzeItem called', {
       hasDataUrl: !!dataUrl,
       dataUrlLength: dataUrl?.length || 0,
-      askingPrice: askingPrice || 'not provided'
+      askingPrice: askingPrice || 'not provided',
+      consensusMode
     })
 
     setAnalyzing(true)
@@ -30,7 +35,7 @@ export function useVintageAnalysis() {
       // Check data URL size (rough estimate: base64 is ~4/3 of binary size)
       const estimatedSize = (dataUrl.length * 3) / 4
       console.log('Estimated image size:', Math.round(estimatedSize / 1024), 'KB')
-      
+
       if (estimatedSize > 20 * 1024 * 1024) { // 20MB limit to match backend
         throw new Error('Image too large. Please use an image under 20MB.')
       }
@@ -39,8 +44,11 @@ export function useVintageAnalysis() {
         throw new Error('Image too small or corrupted. Please try a different image.')
       }
 
-      console.log('Sending analysis request...', { hasAskingPrice: !!askingPrice })
-      const requestBody: { image: string; askingPrice?: number } = { image: dataUrl }
+      console.log('Sending analysis request...', { hasAskingPrice: !!askingPrice, consensusMode })
+      const requestBody: { image: string; askingPrice?: number; consensusMode?: string } = {
+        image: dataUrl,
+        consensusMode
+      }
       if (askingPrice !== undefined && askingPrice > 0) {
         requestBody.askingPrice = askingPrice
       }
@@ -58,7 +66,7 @@ export function useVintageAnalysis() {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Analysis failed' }))
         console.error('Analysis error response:', errorData)
-        
+
         // Log error to backend for debugging
         fetch('/api/errors', {
           method: 'POST',
@@ -72,7 +80,7 @@ export function useVintageAnalysis() {
             details: { status: response.status, errorData }
           })
         }).catch(() => {}) // Silent fail for error logging
-        
+
         throw new Error(errorData.error || `Analysis failed (${response.status})`)
       }
 
@@ -130,6 +138,129 @@ export function useVintageAnalysis() {
     }
   }, [])
 
+  // Multi-image analysis for world-class capture flow
+  const analyzeMultiImage = useCallback(async (
+    images: CapturedImage[],
+    askingPrice?: number,
+    consensusMode: 'auto' | 'always' | 'never' = 'auto'
+  ): Promise<ItemAnalysis | null> => {
+    console.log('🔬 analyzeMultiImage called', {
+      imageCount: images.length,
+      roles: images.map(img => img.role),
+      askingPrice: askingPrice || 'not provided',
+      consensusMode
+    })
+
+    setAnalyzing(true)
+    setError(null)
+
+    try {
+      // For now, use the first/overview image for the main analysis
+      // In a full implementation, the backend would process all images together
+      const overviewImage = images.find(img => img.role === 'overview') || images[0]
+
+      if (!overviewImage) {
+        throw new Error('No images provided for analysis')
+      }
+
+      // Validate data URL format
+      if (!overviewImage.dataUrl.startsWith('data:image/')) {
+        throw new Error('Invalid image data format')
+      }
+
+      console.log('🔍 Starting multi-image analysis...', {
+        primaryImage: overviewImage.role,
+        totalImages: images.length
+      })
+
+      // Build request with all images
+      const requestBody = {
+        image: overviewImage.dataUrl,
+        additionalImages: images
+          .filter(img => img !== overviewImage)
+          .map(img => ({
+            role: img.role,
+            dataUrl: img.dataUrl
+          })),
+        askingPrice: askingPrice && askingPrice > 0 ? askingPrice : undefined,
+        multiImageAnalysis: true,
+        consensusMode
+      }
+
+      const response = await fetch('/api/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      })
+
+      console.log('Multi-image analysis response received:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Analysis failed' }))
+        console.error('Analysis error response:', errorData)
+        throw new Error(errorData.error || `Analysis failed (${response.status})`)
+      }
+
+      const data = await response.json()
+      console.log('Multi-image analysis data received:', { success: data.success, hasData: !!data.data })
+
+      if (!data.success || !data.data) {
+        throw new Error(data.error || 'Invalid response from analysis service')
+      }
+
+      // Transform the analysis
+      const rawAnalysis = data.data
+      const analysis: ItemAnalysis = {
+        ...rawAnalysis,
+        historicalContext: rawAnalysis.historical_context || rawAnalysis.historicalContext || '',
+        estimatedValueMin: rawAnalysis.estimated_value_min || rawAnalysis.estimatedValueMin,
+        estimatedValueMax: rawAnalysis.estimated_value_max || rawAnalysis.estimatedValueMax,
+        imageUrl: rawAnalysis.image_url || rawAnalysis.imageUrl || '',
+        stylingSuggestions: rawAnalysis.styling_suggestions
+          ? (typeof rawAnalysis.styling_suggestions === 'string'
+              ? JSON.parse(rawAnalysis.styling_suggestions)
+              : rawAnalysis.styling_suggestions)
+          : (rawAnalysis.stylingSuggestions || []),
+        marketplaceLinks: rawAnalysis.marketplaceLinks || [],
+        // Authentication fields
+        authenticationConfidence: rawAnalysis.authentication_confidence || rawAnalysis.authenticationConfidence || null,
+        authenticityRisk: rawAnalysis.authenticity_risk || rawAnalysis.authenticityRisk || null,
+        authenticationChecklist: rawAnalysis.authentication_checklist
+          ? (typeof rawAnalysis.authentication_checklist === 'string'
+              ? JSON.parse(rawAnalysis.authentication_checklist)
+              : rawAnalysis.authentication_checklist)
+          : (rawAnalysis.authenticationChecklist || null),
+        knownFakeIndicators: rawAnalysis.known_fake_indicators
+          ? (typeof rawAnalysis.known_fake_indicators === 'string'
+              ? JSON.parse(rawAnalysis.known_fake_indicators)
+              : rawAnalysis.known_fake_indicators)
+          : (rawAnalysis.knownFakeIndicators || null),
+        additionalPhotosRequested: rawAnalysis.additional_photos_requested
+          ? (typeof rawAnalysis.additional_photos_requested === 'string'
+              ? JSON.parse(rawAnalysis.additional_photos_requested)
+              : rawAnalysis.additional_photos_requested)
+          : (rawAnalysis.additionalPhotosRequested || null),
+        expertReferralRecommended: rawAnalysis.expert_referral_recommended ?? rawAnalysis.expertReferralRecommended ?? null,
+        expertReferralReason: rawAnalysis.expert_referral_reason || rawAnalysis.expertReferralReason || null,
+        authenticationAssessment: rawAnalysis.authentication_assessment || rawAnalysis.authenticationAssessment || null,
+        // World-class fields (if returned by backend)
+        visualMarkers: rawAnalysis.visualMarkers || [],
+        knowledgeState: rawAnalysis.knowledgeState || null,
+        itemAuthentication: rawAnalysis.itemAuthentication || null,
+      }
+
+      return analysis
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(errorMessage)
+      return null
+    } finally {
+      setAnalyzing(false)
+    }
+  }, [])
+
   const saveToCollection = useCallback(async (
     analysisId: string,
     notes?: string,
@@ -151,11 +282,11 @@ export function useVintageAnalysis() {
       })
 
       console.log('Save to collection response:', response.status, response.statusText)
-      
+
       if (response.ok) {
         const data = await response.json()
         console.log('Save successful:', data)
-        
+
         // Verify the save by immediately checking the collection
         setTimeout(async () => {
           try {
@@ -165,7 +296,7 @@ export function useVintageAnalysis() {
                 'Content-Type': 'application/json',
               },
             })
-            
+
             if (verifyResponse.ok) {
               const verifyData = await verifyResponse.json()
               console.log('Collection verification:', {
@@ -178,7 +309,7 @@ export function useVintageAnalysis() {
             console.warn('Failed to verify collection save:', e)
           }
         }, 1000)
-        
+
         return true
       } else {
         const errorData = await response.text()
@@ -228,23 +359,23 @@ export function useVintageAnalysis() {
           'Content-Type': 'application/json',
         },
       })
-      
+
       console.log('Collection response:', response.status, response.statusText)
-      
+
       if (response.status === 401) {
         console.log('Collection fetch failed: Not authenticated')
         return []
       }
-      
+
       if (response.ok) {
         const data = await response.json()
-        console.log('Collection data received:', { 
+        console.log('Collection data received:', {
           success: data.success,
           itemsCount: data.items?.length || 0,
           collectionCount: data.collection?.length || 0,
           hasItems: !!(data.items || data.collection)
         })
-        
+
         // Return the items array if available, otherwise fall back to collection
         return data.items || data.collection || []
       } else {
@@ -322,6 +453,7 @@ export function useVintageAnalysis() {
     analyzing,
     error,
     analyzeItem,
+    analyzeMultiImage,
     saveToCollection,
     submitFeedback,
     getCollection,

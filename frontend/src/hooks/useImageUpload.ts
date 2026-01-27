@@ -140,7 +140,7 @@ export function useImageUpload() {
         };
         
         input.click();
-      } catch (err) {
+      } catch (_err) {
         setError('Unable to open file selector');
         resolve(null);
       }
