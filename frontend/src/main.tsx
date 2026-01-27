@@ -11,10 +11,10 @@ initSentry();
 // Error fallback component
 function ErrorFallback({ error }: { error: Error | null }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
       <div className="text-center p-8 max-w-md">
         <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
-        <p className="text-gray-400 mb-6">
+        <p className="text-muted-foreground mb-6">
           We've been notified and are working to fix the issue.
         </p>
         <button

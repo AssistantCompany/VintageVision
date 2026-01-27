@@ -12,7 +12,7 @@ import {
   Target,
   AlertCircle
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import { FlipDifficulty, getFlipDifficultyColor } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -107,7 +107,7 @@ export default function FlipAssessment({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.5 }}
     >
-      <GlassCard className="overflow-hidden" gradient="purple">
+      <GlassCard className="overflow-hidden" >
         {/* Header */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -123,8 +123,8 @@ export default function FlipAssessment({
               <Repeat className="w-5 h-5 text-white" />
             </div>
             <div className="text-left">
-              <h3 className="font-bold text-gray-900">Flip Assessment</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-bold text-foreground">Flip Assessment</h3>
+              <p className="text-sm text-muted-foreground">
                 {config?.label || 'Resale potential analysis'}
               </p>
             </div>
@@ -142,9 +142,9 @@ export default function FlipAssessment({
               </span>
             )}
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
+              <ChevronUp className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             )}
           </div>
         </button>
@@ -172,12 +172,12 @@ export default function FlipAssessment({
                     )}>
                       <div className="flex items-center gap-2 mb-2">
                         <DifficultyIcon className={cn('w-5 h-5', getFlipDifficultyColor(difficulty))} />
-                        <span className="text-xs text-gray-500 uppercase tracking-wide">Difficulty</span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Difficulty</span>
                       </div>
                       <p className={cn('font-bold text-lg', getFlipDifficultyColor(difficulty))}>
                         {config.label}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">{config.description}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{config.description}</p>
                     </div>
                   )}
 
@@ -186,10 +186,10 @@ export default function FlipAssessment({
                     <div className="p-4 rounded-xl border bg-blue-50 border-blue-200">
                       <div className="flex items-center gap-2 mb-2">
                         <Clock className="w-5 h-5 text-blue-500" />
-                        <span className="text-xs text-gray-500 uppercase tracking-wide">Time to Sell</span>
+                        <span className="text-xs text-muted-foreground uppercase tracking-wide">Time to Sell</span>
                       </div>
                       <p className="font-bold text-lg text-blue-700">{timeEstimate}</p>
-                      <p className="text-xs text-gray-500 mt-1">Estimated selling timeline</p>
+                      <p className="text-xs text-muted-foreground mt-1">Estimated selling timeline</p>
                     </div>
                   )}
                 </div>
@@ -200,7 +200,7 @@ export default function FlipAssessment({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <TrendingUp className="w-5 h-5 text-green-500" />
-                        <span className="font-semibold text-gray-700">Potential Profit</span>
+                        <span className="font-semibold text-muted-foreground">Potential Profit</span>
                       </div>
                       <p className="font-bold text-xl text-green-600">
                         {profitPotentialMin != null && profitPotentialMax != null
@@ -219,7 +219,7 @@ export default function FlipAssessment({
                 {/* Resale Channels */}
                 {resaleChannels && resaleChannels.length > 0 && (
                   <div>
-                    <h4 className="flex items-center gap-2 font-semibold text-gray-700 mb-3">
+                    <h4 className="flex items-center gap-2 font-semibold text-muted-foreground mb-3">
                       <Store className="w-4 h-4" />
                       Recommended Selling Channels
                     </h4>
@@ -232,7 +232,7 @@ export default function FlipAssessment({
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.1 * index }}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-purple-200 text-sm text-gray-700 shadow-sm"
+                            className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-purple-200 text-sm text-muted-foreground shadow-sm"
                           >
                             <ChannelIcon className="w-4 h-4 text-purple-500" />
                             {channel}

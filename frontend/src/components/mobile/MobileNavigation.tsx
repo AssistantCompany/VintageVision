@@ -11,12 +11,13 @@ import {
   X,
   Sparkles,
   Camera,
-  Bell
+  Bell,
+  Crown
 } from 'lucide-react'
 import { useMobileDetection } from '@/hooks/useMobileDetection'
 import { useCollectionCounts } from '@/hooks/useCollectionCounts'
 
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import { cn, vibrate } from '@/lib/utils'
 
 interface NavigationItem {
@@ -111,7 +112,7 @@ export default function MobileNavigation() {
         animate={{ y: 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
-        <GlassCard className="mx-4 mb-4 overflow-hidden" gradient="default" blur="xl">
+        <GlassCard className="mx-4 mb-4 overflow-hidden">
           <div className="flex items-center justify-around p-2">
             {navigationItems.map((item) => {
               const isActive = activeTab === item.path
@@ -122,10 +123,10 @@ export default function MobileNavigation() {
                   key={item.id}
                   onClick={() => handleNavigation(item)}
                   className={cn(
-                    'flex flex-col items-center justify-center p-3 rounded-xl transition-all duration-300 relative',
+                    'flex flex-col items-center justify-center p-3 min-h-12 rounded-xl transition-all duration-300 relative',
                     isActive 
                       ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg' 
-                      : 'text-gray-600 hover:text-amber-600 hover:bg-amber-50/50',
+                      : 'text-muted-foreground hover:text-primary hover:bg-primary/10',
                     item.primary && 'scale-110'
                   )}
                   whileTap={{ scale: 0.95 }}
@@ -170,16 +171,18 @@ export default function MobileNavigation() {
         </GlassCard>
       </motion.div>
 
-      {/* Floating Action Button for Camera */}
+      {/* Floating Action Button for Camera - Only show on home/app pages */}
+      {(location.pathname === '/' || location.pathname === '/app') && (
       <motion.div
         className={cn(
           'fixed right-4 z-50',
-          deviceInfo.hasNotchSupport 
-            ? 'bottom-32' 
+          deviceInfo.hasNotchSupport
+            ? 'bottom-32'
             : 'bottom-28'
         )}
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
+        exit={{ scale: 0, rotate: 180 }}
         transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.3 }}
       >
         <motion.button
@@ -217,6 +220,7 @@ export default function MobileNavigation() {
           <Camera className="w-7 h-7 text-white" />
         </motion.button>
       </motion.div>
+      )}
 
       {/* Side Menu for Additional Options */}
       <AnimatePresence>
@@ -242,7 +246,7 @@ export default function MobileNavigation() {
               dragConstraints={{ left: -100, right: 0 }}
               
             >
-              <GlassCard className="h-full m-0 rounded-none rounded-r-2xl" gradient="default" blur="xl">
+              <GlassCard className="h-full m-0 rounded-none rounded-r-2xl">
                 <div className={cn(
                   'p-6 h-full overflow-y-auto',
                   deviceInfo.hasNotchSupport && 'pt-safe-area-inset-top'
@@ -254,23 +258,23 @@ export default function MobileNavigation() {
                         <Sparkles className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h2 className="font-bold text-gray-900">VintageVision</h2>
-                        <p className="text-sm text-gray-600">AI Antique Expert</p>
+                        <h2 className="font-bold text-foreground">VintageVision</h2>
+                        <p className="text-sm text-muted-foreground">AI Antique Expert</p>
                       </div>
                     </div>
                     
                     <motion.button
                       onClick={() => setShowMenu(false)}
-                      className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center"
+                      className="w-10 h-10 bg-muted rounded-full flex items-center justify-center"
                       whileTap={{ scale: 0.9 }}
                     >
-                      <X className="w-5 h-5 text-gray-600" />
+                      <X className="w-5 h-5 text-muted-foreground" />
                     </motion.button>
                   </div>
 
                   {/* User Info */}
                   {user && (
-                    <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl border border-amber-200/50">
+                    <div className="mb-6 p-4 bg-primary/10 rounded-xl border border-primary/20">
                       <div className="flex items-center gap-3">
                         {user.avatarUrl ? (
                           <img
@@ -284,10 +288,10 @@ export default function MobileNavigation() {
                           </div>
                         )}
                         <div>
-                          <h3 className="font-semibold text-amber-900">
+                          <h3 className="font-semibold text-primary">
                             {user.displayName || user.email.split('@')[0]}
                           </h3>
-                          <p className="text-sm text-amber-700">Pro Member</p>
+                          <p className="text-sm text-primary/80">Pro Member</p>
                         </div>
                       </div>
                     </div>
@@ -296,6 +300,7 @@ export default function MobileNavigation() {
                   {/* Menu Items */}
                   <div className="space-y-2">
                     {[
+                      { icon: Crown, label: 'Pro Tools', path: '/premium' },
                       { icon: Settings, label: 'Preferences', path: '/preferences' },
                       { icon: Bell, label: 'Notifications', path: '/notifications' },
                       { icon: Sparkles, label: 'Upgrade', path: '/pricing' },
@@ -307,14 +312,14 @@ export default function MobileNavigation() {
                           setShowMenu(false)
                           vibrate(30)
                         }}
-                        className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-gray-100/70 transition-colors text-left"
+                        className="w-full flex items-center gap-3 p-4 rounded-xl hover:bg-muted/70 transition-colors text-left"
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        <menuItem.icon className="w-5 h-5 text-gray-600" />
-                        <span className="font-medium text-gray-900">{menuItem.label}</span>
+                        <menuItem.icon className="w-5 h-5 text-muted-foreground" />
+                        <span className="font-medium text-foreground">{menuItem.label}</span>
                       </motion.button>
                     ))}
                   </div>

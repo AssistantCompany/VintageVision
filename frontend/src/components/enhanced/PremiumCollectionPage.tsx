@@ -18,11 +18,8 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PremiumHeader from '@/components/enhanced/PremiumHeader'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import SpotlightEffect from '@/components/ui/SpotlightEffect'
-import FloatingParticles from '@/components/ui/FloatingParticles'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
 import { cn, formatCurrency, formatRelativeTime, trackEvent } from '@/lib/utils'
 import PullToRefresh from '@/components/mobile/PullToRefresh'
@@ -236,15 +233,7 @@ export default function PremiumCollectionPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-rose-50">
-        <FloatingParticles 
-          count={60} 
-          className="opacity-20"
-          colors={['#8b5cf6', '#ec4899', '#f43f5e', '#06b6d4']}
-        />
-      </div>
+    <div className="min-h-screen bg-background">
 
       <PremiumHeader />
 
@@ -257,17 +246,17 @@ export default function PremiumCollectionPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-4 mb-6">
-            <MagneticButton
+            <Button
               onClick={() => navigate('/')}
-              variant="glass"
+              variant="outline"
               size="sm"
             >
               <ArrowLeft className="w-4 h-4" />
-            </MagneticButton>
+            </Button>
 
             <div className="flex-1">
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+                <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                   My Collection
                 </h1>
                 {userTier !== 'free' && (
@@ -277,7 +266,7 @@ export default function PremiumCollectionPage() {
                   </span>
                 )}
               </div>
-              <p className="text-gray-600 mt-1">
+              <p className="text-muted-foreground mt-1">
                 {items.length} items • Total estimated value: {formatCurrency(totalValue)}
               </p>
             </div>
@@ -309,27 +298,27 @@ export default function PremiumCollectionPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <GlassCard className="p-4 text-center" hover>
-                  <stat.icon className="w-6 h-6 text-purple-600 mx-auto mb-2" />
-                  <div className="text-lg font-bold text-gray-900">{stat.value}</div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
+                <GlassCard className="p-4 text-center" hover="scale">
+                  <stat.icon className="w-6 h-6 text-primary mx-auto mb-2" />
+                  <div className="text-lg font-bold text-foreground">{stat.value}</div>
+                  <div className="text-sm text-muted-foreground">{stat.label}</div>
                 </GlassCard>
               </motion.div>
             ))}
           </div>
 
           {/* Controls */}
-          <GlassCard className="p-6" gradient="default">
+          <GlassCard className="p-6">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               {/* Search */}
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Search your collection..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
               </div>
 
@@ -338,19 +327,19 @@ export default function PremiumCollectionPage() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
-                  className="px-3 py-2 bg-white/50 border border-gray-200/50 rounded-xl text-sm"
+                  className="px-3 py-2 bg-card border border-border rounded-xl text-sm"
                 >
                   <option value="recent">Recently Added</option>
                   <option value="value">Highest Value</option>
                   <option value="name">Name A-Z</option>
                 </select>
 
-                <div className="flex bg-gray-100/50 rounded-xl p-1">
+                <div className="flex bg-muted/50 rounded-xl p-1">
                   <button
                     onClick={() => setViewMode('grid')}
                     className={cn(
                       'p-3 min-h-12 rounded-lg transition-all',
-                      viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-white/50'
+                      viewMode === 'grid' ? 'bg-card shadow-sm' : 'hover:bg-muted/50'
                     )}
                   >
                     <Grid3X3 className="w-4 h-4" />
@@ -359,21 +348,21 @@ export default function PremiumCollectionPage() {
                     onClick={() => setViewMode('list')}
                     className={cn(
                       'p-3 min-h-12 rounded-lg transition-all',
-                      viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-white/50'
+                      viewMode === 'list' ? 'bg-card shadow-sm' : 'hover:bg-muted/50'
                     )}
                   >
                     <List className="w-4 h-4" />
                   </button>
                 </div>
 
-                <MagneticButton
+                <Button
                   onClick={handleExport}
-                  variant="glass"
+                  variant="outline"
                   size="sm"
                 >
                   <Download className="w-4 h-4" />
                   Export
-                </MagneticButton>
+                </Button>
               </div>
             </div>
           </GlassCard>
@@ -389,8 +378,8 @@ export default function PremiumCollectionPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4" />
-              <p className="text-gray-600">Loading your collection...</p>
+              <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading your collection...</p>
             </motion.div>
           ) : filteredItems.length === 0 ? (
             <motion.div
@@ -400,36 +389,34 @@ export default function PremiumCollectionPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <SpotlightEffect>
-                <GlassCard className="p-12 max-w-md mx-auto" gradient="warm">
-                  <Heart className="w-16 h-16 text-purple-400 mx-auto mb-6" />
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    {searchQuery ? 'No matching items' : 'Start Your Collection'}
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    {searchQuery
-                      ? 'Try a different search term to find your items.'
-                      : 'Identify your first vintage treasure to begin building your collection.'
-                    }
-                  </p>
-                  {!searchQuery && (
-                    <LiquidButton
-                      onClick={() => {
-                        if (isAtLimit) {
-                          setShowPaywall(true)
-                        } else {
-                          navigate('/')
-                        }
-                      }}
-                      variant="primary"
-                      size="md"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Identify First Item
-                    </LiquidButton>
-                  )}
-                </GlassCard>
-              </SpotlightEffect>
+              <GlassCard className="p-12 max-w-md mx-auto" variant="brass">
+                <Heart className="w-16 h-16 text-primary/60 mx-auto mb-6" />
+                <h3 className="text-xl font-bold text-foreground mb-4">
+                  {searchQuery ? 'No matching items' : 'Start Your Collection'}
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchQuery
+                    ? 'Try a different search term to find your items.'
+                    : 'Identify your first vintage treasure to begin building your collection.'
+                  }
+                </p>
+                {!searchQuery && (
+                  <Button
+                    onClick={() => {
+                      if (isAtLimit) {
+                        setShowPaywall(true)
+                      } else {
+                        navigate('/')
+                      }
+                    }}
+                    variant="brass"
+                    size="default"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Identify First Item
+                  </Button>
+                )}
+              </GlassCard>
             </motion.div>
           ) : (
             <motion.div
@@ -451,11 +438,10 @@ export default function PremiumCollectionPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <SpotlightEffect>
-                    <GlassCard
-                      className="overflow-hidden cursor-pointer group"
-                      hover
-                    >
+                  <GlassCard
+                    className="overflow-hidden cursor-pointer group"
+                    hover="scale"
+                  >
                       <div
                         className={cn(
                           'flex',
@@ -485,14 +471,14 @@ export default function PremiumCollectionPage() {
                                 setDetailItem(item)
                               }}
                             >
-                              <MagneticButton
+                              <Button
                                 onClick={() => setDetailItem(item)}
-                                variant="glass"
+                                variant="outline"
                                 size="sm"
                                 className="!p-2"
                               >
                                 <Eye className="w-4 h-4" />
-                              </MagneticButton>
+                              </Button>
                             </div>
                             <div
                               onClick={(e) => {
@@ -500,14 +486,14 @@ export default function PremiumCollectionPage() {
                                 handleDeleteItem(item.id)
                               }}
                             >
-                              <MagneticButton
+                              <Button
                                 onClick={() => {}}
-                                variant="glass"
+                                variant="outline"
                                 size="sm"
                                 className="!p-2"
                               >
                                 <Trash2 className="w-4 h-4" />
-                              </MagneticButton>
+                              </Button>
                             </div>
                           </div>
 
@@ -516,12 +502,12 @@ export default function PremiumCollectionPage() {
                         {/* Content */}
                         <div className="p-6 flex-1">
                           <div className="flex items-start justify-between mb-3">
-                            <h3 className="font-bold text-gray-900 text-lg group-hover:text-purple-700 transition-colors">
+                            <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">
                               {item.name}
                             </h3>
                             {(item.estimated_value_min || item.estimated_value_max) && (
                               <div className="text-right">
-                                <div className="text-sm font-semibold text-green-600">
+                                <div className="text-sm font-semibold text-success">
                                   {item.estimated_value_min && item.estimated_value_max
                                     ? `${formatCurrency(item.estimated_value_min)} - ${formatCurrency(item.estimated_value_max)}`
                                     : formatCurrency(item.estimated_value_min || item.estimated_value_max || 0)
@@ -534,31 +520,31 @@ export default function PremiumCollectionPage() {
                           {/* Tags */}
                           <div className="flex flex-wrap gap-2 mb-4">
                             {item.era && (
-                              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                              <span className="px-2 py-1 bg-info-muted text-info rounded-full text-xs font-medium">
                                 {item.era}
                               </span>
                             )}
                             {item.style && (
-                              <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                              <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium">
                                 {item.style}
                               </span>
                             )}
-                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                            <span className="px-2 py-1 bg-success-muted text-success rounded-full text-xs font-medium">
                               {Math.round(item.confidence * 100)}% confident
                             </span>
                           </div>
 
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                          <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                             {item.description}
                           </p>
 
                           {item.notes && (
-                            <div className="mb-4 p-3 bg-amber-50/50 rounded-lg border border-amber-200/50">
-                              <p className="text-amber-800 text-sm italic">"{item.notes}"</p>
+                            <div className="mb-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                              <p className="text-primary text-sm italic">"{item.notes}"</p>
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between text-sm text-gray-500">
+                          <div className="flex items-center justify-between text-sm text-muted-foreground">
                             <div className="flex items-center gap-2">
                               <Calendar className="w-4 h-4" />
                               <span>{formatRelativeTime(item.saved_at)}</span>
@@ -572,7 +558,6 @@ export default function PremiumCollectionPage() {
                         </div>
                       </div>
                     </GlassCard>
-                  </SpotlightEffect>
                 </motion.div>
               ))}
             </motion.div>

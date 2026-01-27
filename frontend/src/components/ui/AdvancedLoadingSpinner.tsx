@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
-import GlassCard from './GlassCard'
+import { GlassCard } from './glass-card'
 
 interface AdvancedLoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl'
@@ -30,11 +30,11 @@ const SpinnerVariant = ({ variant, size, progress }: {
         <div className={cn('relative', sizeClass)}>
           {/* Central core */}
           <motion.div
-            className="absolute inset-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full"
+            className="absolute inset-1/2 w-2 h-2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-primary to-brass-light rounded-full"
             animate={{ scale: [1, 1.5, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
           />
-          
+
           {/* Orbiting particles */}
           {[0, 1, 2].map((i) => (
             <motion.div
@@ -47,8 +47,8 @@ const SpinnerVariant = ({ variant, size, progress }: {
                 ease: 'linear'
               }}
             >
-              <div 
-                className="absolute w-1.5 h-1.5 bg-gradient-to-r from-purple-400 to-pink-500 rounded-full"
+              <div
+                className="absolute w-1.5 h-1.5 bg-gradient-to-r from-primary to-brass-light rounded-full"
                 style={{
                   top: '10%',
                   left: '50%',
@@ -67,7 +67,7 @@ const SpinnerVariant = ({ variant, size, progress }: {
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="absolute inset-0 border-4 border-amber-400/30 rounded-full"
+              className="absolute inset-0 border-4 border-primary/30 rounded-full"
               animate={{
                 scale: [1, 1.5, 1],
                 opacity: [1, 0, 1]
@@ -79,14 +79,14 @@ const SpinnerVariant = ({ variant, size, progress }: {
               }}
             />
           ))}
-          <div className="absolute inset-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full" />
+          <div className="absolute inset-3 bg-gradient-to-r from-primary to-brass-light rounded-full" />
         </div>
       )
 
     case 'minimal':
       return (
         <motion.div
-          className={cn('border-4 border-amber-200/30 border-t-amber-500 rounded-full', sizeClass)}
+          className={cn('border-4 border-muted border-t-primary rounded-full', sizeClass)}
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
         />
@@ -97,25 +97,25 @@ const SpinnerVariant = ({ variant, size, progress }: {
         <div className={cn('relative', sizeClass)}>
           {/* Outer ring */}
           <motion.div
-            className="absolute inset-0 border-4 border-amber-200/30 rounded-full"
+            className="absolute inset-0 border-4 border-muted rounded-full"
             animate={{ rotate: 360 }}
             transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
           />
-          
+
           {/* Inner spinning element */}
           <motion.div
-            className="absolute inset-2 border-4 border-transparent border-t-amber-500 border-r-orange-500 rounded-full"
+            className="absolute inset-2 border-4 border-transparent border-t-primary border-r-brass-light rounded-full"
             animate={{ rotate: -360 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: 'linear' }}
           />
-          
+
           {/* Center gradient */}
-          <div className="absolute inset-4 bg-gradient-to-br from-amber-400/20 to-orange-500/20 rounded-full" />
-          
+          <div className="absolute inset-4 bg-gradient-to-br from-primary/20 to-brass-light/20 rounded-full" />
+
           {/* Progress indicator */}
           {progress !== undefined && (
             <motion.div
-              className="absolute inset-1 border-4 border-transparent border-t-green-500 rounded-full"
+              className="absolute inset-1 border-4 border-transparent border-t-emerald-500 rounded-full"
               initial={{ rotate: 0 }}
               animate={{ rotate: (progress / 100) * 360 }}
               transition={{ duration: 0.5 }}
@@ -138,7 +138,7 @@ export default function AdvancedLoadingSpinner({
   const content = (
     <div className={cn('flex flex-col items-center', sizeConfig.container)}>
       <SpinnerVariant variant={variant} size={size} progress={progress} />
-      
+
       {text && (
         <motion.div
           className="text-center space-y-1"
@@ -146,19 +146,19 @@ export default function AdvancedLoadingSpinner({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <p className={cn('font-medium text-gray-700', sizeConfig.text)}>
+          <p className={cn('font-medium text-foreground', sizeConfig.text)}>
             {text}
           </p>
-          
+
           {progress !== undefined && (
             <motion.div
-              className="w-24 h-1 bg-gray-200 rounded-full overflow-hidden"
+              className="w-24 h-1 bg-muted rounded-full overflow-hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
             >
               <motion.div
-                className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
+                className="h-full bg-gradient-to-r from-primary to-brass-light"
                 initial={{ width: 0 }}
                 animate={{ width: `${progress}%` }}
                 transition={{ duration: 0.5 }}
@@ -172,7 +172,7 @@ export default function AdvancedLoadingSpinner({
 
   if (variant === 'glass') {
     return (
-      <GlassCard className={cn('p-8 text-center', className)} gradient="warm">
+      <GlassCard variant="brass" className={cn('p-8 text-center', className)}>
         {content}
       </GlassCard>
     )

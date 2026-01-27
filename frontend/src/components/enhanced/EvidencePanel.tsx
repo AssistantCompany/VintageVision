@@ -9,7 +9,7 @@ import {
   AlertTriangle,
   Info
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import { cn } from '@/lib/utils'
 
 interface EvidencePanelProps {
@@ -43,7 +43,7 @@ export default function EvidencePanel({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
     >
-      <GlassCard className="overflow-hidden" gradient="default">
+      <GlassCard className="overflow-hidden" >
         {/* Header */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -56,17 +56,17 @@ export default function EvidencePanel({
               <Scale className="w-5 h-5 text-white" />
             </div>
             <div className="text-left">
-              <h3 className="font-bold text-gray-900">Evidence Analysis</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-bold text-foreground">Evidence Analysis</h3>
+              <p className="text-sm text-muted-foreground">
                 {evidenceFor?.length || 0} supporting • {evidenceAgainst?.length || 0} against
                 {hasRedFlags && ` • ${redFlags?.length} warnings`}
               </p>
             </div>
           </div>
           {isExpanded ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
+            <ChevronUp className="w-5 h-5 text-muted-foreground" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
           )}
         </button>
 
@@ -87,11 +87,11 @@ export default function EvidencePanel({
                   <div className="grid grid-cols-2 gap-4">
                     {identificationConfidence !== null && (
                       <div className="bg-white/50 rounded-xl p-4">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
                           Item Confidence
                         </p>
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${identificationConfidence * 100}%` }}
@@ -103,7 +103,7 @@ export default function EvidencePanel({
                               )}
                             />
                           </div>
-                          <span className="text-sm font-bold text-gray-700">
+                          <span className="text-sm font-bold text-muted-foreground">
                             {Math.round(identificationConfidence * 100)}%
                           </span>
                         </div>
@@ -111,11 +111,11 @@ export default function EvidencePanel({
                     )}
                     {makerConfidence !== null && (
                       <div className="bg-white/50 rounded-xl p-4">
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">
                           Maker Confidence
                         </p>
                         <div className="flex items-center gap-3">
-                          <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${makerConfidence * 100}%` }}
@@ -127,7 +127,7 @@ export default function EvidencePanel({
                               )}
                             />
                           </div>
-                          <span className="text-sm font-bold text-gray-700">
+                          <span className="text-sm font-bold text-muted-foreground">
                             {Math.round(makerConfidence * 100)}%
                           </span>
                         </div>
@@ -210,14 +210,14 @@ export default function EvidencePanel({
 
                 {/* Attribution Notes */}
                 {attributionNotes && (
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <div className="bg-muted/50 rounded-xl p-4 border border-border">
                     <div className="flex items-start gap-3">
-                      <Info className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                      <Info className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
                       <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
                           Attribution Notes
                         </p>
-                        <p className="text-sm text-gray-700">{attributionNotes}</p>
+                        <p className="text-sm text-muted-foreground">{attributionNotes}</p>
                       </div>
                     </div>
                   </div>

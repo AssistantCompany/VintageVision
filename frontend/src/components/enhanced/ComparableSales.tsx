@@ -9,7 +9,7 @@ import {
   DollarSign,
   TrendingUp
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import { ComparableSale, formatPrice } from '@/types'
 
 interface ComparableSalesProps {
@@ -43,7 +43,7 @@ export default function ComparableSales({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.7 }}
     >
-      <GlassCard className="overflow-hidden" gradient="cool">
+      <GlassCard className="overflow-hidden" >
         {/* Header */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -56,17 +56,17 @@ export default function ComparableSales({
               <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div className="text-left">
-              <h3 className="font-bold text-gray-900">Market Comparables</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-bold text-foreground">Market Comparables</h3>
+              <p className="text-sm text-muted-foreground">
                 {validSales.length} recent {validSales.length === 1 ? 'sale' : 'sales'} • Avg: {formatPrice(avgPrice)}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
+              <ChevronUp className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             )}
           </div>
         </button>
@@ -86,12 +86,12 @@ export default function ComparableSales({
                 {/* Price Range Visualization */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
                   <div className="flex items-center justify-between mb-4">
-                    <span className="text-sm text-gray-500">Price Range from Comparables</span>
+                    <span className="text-sm text-muted-foreground">Price Range from Comparables</span>
                     <TrendingUp className="w-4 h-4 text-blue-500" />
                   </div>
 
                   {/* Visual Price Range Bar */}
-                  <div className="relative h-8 bg-gray-200 rounded-full overflow-hidden mb-3">
+                  <div className="relative h-8 bg-muted rounded-full overflow-hidden mb-3">
                     <div
                       className="absolute h-full bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
                       style={{
@@ -116,7 +116,7 @@ export default function ComparableSales({
                   {/* Our Estimate Comparison */}
                   {(estimatedMin || estimatedMax) && (
                     <div className="flex items-center justify-center gap-2 text-sm">
-                      <span className="text-gray-500">Our estimate:</span>
+                      <span className="text-muted-foreground">Our estimate:</span>
                       <span className="font-bold text-indigo-600">
                         {estimatedMin && estimatedMax
                           ? `${formatPrice(estimatedMin)} - ${formatPrice(estimatedMax)}`
@@ -134,12 +134,12 @@ export default function ComparableSales({
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 * index }}
-                      className="bg-white/60 rounded-xl p-4 border border-gray-200 hover:border-blue-300 transition-colors"
+                      className="bg-white/60 rounded-xl p-4 border border-border hover:border-blue-300 transition-colors"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <p className="font-medium text-gray-800 mb-2">{sale.description}</p>
-                          <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                          <p className="font-medium text-foreground mb-2">{sale.description}</p>
+                          <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3.5 h-3.5" />
                               {sale.venue}
@@ -150,7 +150,7 @@ export default function ComparableSales({
                             </span>
                           </div>
                           {sale.relevance && (
-                            <p className="text-xs text-gray-400 mt-2 italic">
+                            <p className="text-xs text-muted-foreground mt-2 italic">
                               Relevance: {sale.relevance}
                             </p>
                           )}
@@ -160,7 +160,7 @@ export default function ComparableSales({
                             <DollarSign className="w-4 h-4" />
                             {sale.price?.toLocaleString() ?? 'N/A'}
                           </div>
-                          <span className="text-xs text-gray-400">Sold</span>
+                          <span className="text-xs text-muted-foreground">Sold</span>
                         </div>
                       </div>
                     </motion.div>

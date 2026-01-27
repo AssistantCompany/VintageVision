@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { WifiOff, Download, RotateCcw, CheckCircle } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import { useNotifications } from './NotificationSystem'
 import { cn, trackEvent } from '@/lib/utils'
 
@@ -179,12 +179,11 @@ function OfflineIndicator() {
           exit={{ opacity: 0, x: -100 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <GlassCard 
+          <GlassCard
             className={cn(
               'p-4 border-2',
               isOffline ? 'border-red-200/50' : 'border-green-200/50'
             )}
-            gradient={isOffline ? "rose" : "default"}
           >
             <div className="flex items-center gap-3">
               {/* Status Icon */}
@@ -220,7 +219,7 @@ function OfflineIndicator() {
                 </p>
                 
                 {queueSize > 0 && (
-                  <p className="text-xs text-gray-600">
+                  <p className="text-xs text-muted-foreground">
                     {queueSize} action{queueSize === 1 ? '' : 's'} pending
                   </p>
                 )}
@@ -228,14 +227,14 @@ function OfflineIndicator() {
 
               {/* Sync Button */}
               {!isOffline && queueSize > 0 && !syncing && (
-                <MagneticButton
+                <Button
                   onClick={processQueue}
-                  variant="primary"
+                  variant="brass"
                   size="sm"
                 >
                   <Download className="w-3 h-3" />
                   Sync
-                </MagneticButton>
+                </Button>
               )}
             </div>
 
@@ -319,23 +318,23 @@ function OfflineCache() {
   if (cacheStatus === 'unavailable') return null
 
   return (
-    <GlassCard className="p-4" gradient="default">
+    <GlassCard className="p-4">
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="font-semibold text-gray-900 mb-1">Offline Storage</h4>
-          <p className="text-sm text-gray-600">
+          <h4 className="font-semibold text-foreground mb-1">Offline Storage</h4>
+          <p className="text-sm text-muted-foreground">
             {cacheStatus === 'checking' ? 'Checking...' : `${formatSize(cacheSize)} cached`}
           </p>
         </div>
         
         {cacheStatus === 'available' && cacheSize > 0 && (
-          <MagneticButton
+          <Button
             onClick={clearCache}
-            variant="ghost"
+            variant="outline"
             size="sm"
           >
             Clear Cache
-          </MagneticButton>
+          </Button>
         )}
       </div>
     </GlassCard>
@@ -384,7 +383,7 @@ function DownloadForOffline() {
   }
 
   return (
-    <GlassCard className="p-4" gradient="cool">
+    <GlassCard className="p-4">
       <div className="text-center space-y-4">
         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto">
           <Download className="w-6 h-6 text-white" />
@@ -410,11 +409,11 @@ function DownloadForOffline() {
           </div>
         )}
 
-        <MagneticButton
+        <Button
           onClick={handleDownload}
           disabled={downloading}
-          variant="primary"
-          size="md"
+          variant="brass"
+          size="default"
           className="w-full"
         >
           {downloading ? (
@@ -432,7 +431,7 @@ function DownloadForOffline() {
               Download Now
             </>
           )}
-        </MagneticButton>
+        </Button>
       </div>
     </GlassCard>
   )

@@ -12,11 +12,8 @@ import {
   Zap,
   Star
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import AnimatedBackground from '@/components/ui/AnimatedBackground'
-import FloatingParticles from '@/components/ui/FloatingParticles'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 
 export default function AboutPage() {
   const navigate = useNavigate()
@@ -123,21 +120,18 @@ export default function AboutPage() {
   ]
 
   return (
-    <div className="min-h-screen pb-28 md:pb-8">
-      <AnimatedBackground variant="cool" />
-      <FloatingParticles count={50} className="opacity-20" />
-      
+    <div className="min-h-screen pb-28 md:pb-8 bg-background">
       {/* Header */}
       <div className="relative z-10 p-4">
-        <GlassCard className="p-4" blur="lg">
-          <MagneticButton
+        <GlassCard className="p-4">
+          <Button
             onClick={() => navigate('/')}
-            variant="ghost"
-            size="md"
+            variant="outline"
+            size="default"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
-          </MagneticButton>
+          </Button>
         </GlassCard>
       </div>
 
@@ -155,14 +149,14 @@ export default function AboutPage() {
               </div>
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
               About{' '}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 VintageVision
               </span>
             </h1>
             
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               We're on a mission to make antique expertise accessible to everyone through the power of AI,
               helping people everywhere discover the stories behind their treasures.
             </p>
@@ -173,15 +167,15 @@ export default function AboutPage() {
       {/* Mission Statement */}
       <div className="relative z-10 py-20 px-4">
         <div className="max-w-6xl mx-auto">
-          <GlassCard className="p-12 text-center" gradient="warm">
+          <GlassCard className="p-12 text-center" variant="brass">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-8">Our Mission</h2>
-              <p className="text-xl text-gray-700 leading-relaxed max-w-4xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-8">Our Mission</h2>
+              <p className="text-xl text-muted-foreground leading-relaxed max-w-4xl mx-auto">
                 "To democratize antique expertise through cutting-edge AI technology, empowering everyone 
                 to discover, understand, and appreciate the rich history of vintage treasures. We believe 
                 every object has a story, and everyone deserves to know it."
@@ -204,8 +198,8 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Values</h2>
-            <p className="text-xl text-gray-600">The principles that guide everything we do</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Our Values</h2>
+            <p className="text-xl text-muted-foreground">The principles that guide everything we do</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -217,12 +211,12 @@ export default function AboutPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-8 text-center h-full" hover>
+                <GlassCard className="p-8 text-center h-full" hover="scale">
                   <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
                     <value.icon className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">{value.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{value.description}</p>
+                  <h3 className="text-xl font-bold text-foreground mb-4">{value.title}</h3>
+                  <p className="text-muted-foreground leading-relaxed">{value.description}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -240,8 +234,8 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Meet Our Team</h2>
-            <p className="text-xl text-gray-600">World-class experts passionate about vintage treasures</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Meet Our Team</h2>
+            <p className="text-xl text-muted-foreground">World-class experts passionate about vintage treasures</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -253,16 +247,16 @@ export default function AboutPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-6 text-center h-full" hover>
+                <GlassCard className="p-6 text-center h-full" hover="scale">
                   <motion.img
                     src={member.image}
                     alt={member.name}
                     className="w-24 h-24 rounded-full object-cover mx-auto mb-4 border-4 border-white/50"
                     whileHover={{ scale: 1.1 }}
                   />
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{member.name}</h3>
-                  <p className="text-blue-600 font-medium mb-3">{member.role}</p>
-                  <p className="text-sm text-gray-600 leading-relaxed">{member.background}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-2">{member.name}</h3>
+                  <p className="text-info font-medium mb-3">{member.role}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{member.background}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -280,8 +274,8 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Journey</h2>
-            <p className="text-xl text-gray-600">Key milestones in our mission to revolutionize antique identification</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Our Journey</h2>
+            <p className="text-xl text-muted-foreground">Key milestones in our mission to revolutionize antique identification</p>
           </motion.div>
 
           <div className="space-y-8">
@@ -298,8 +292,8 @@ export default function AboutPage() {
                   {milestone.year}
                 </div>
                 <GlassCard className="flex-1 p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{milestone.title}</h3>
-                  <p className="text-gray-600">{milestone.description}</p>
+                  <h3 className="text-xl font-bold text-foreground mb-2">{milestone.title}</h3>
+                  <p className="text-muted-foreground">{milestone.description}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -317,8 +311,8 @@ export default function AboutPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Recognition</h2>
-            <p className="text-xl text-gray-600">Awards and achievements that validate our mission</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Recognition</h2>
+            <p className="text-xl text-muted-foreground">Awards and achievements that validate our mission</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -330,10 +324,10 @@ export default function AboutPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-6 text-center h-full" gradient="emerald" hover>
-                  <award.icon className="w-12 h-12 text-emerald-600 mx-auto mb-4" />
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{award.title}</h3>
-                  <p className="text-emerald-600 font-medium">{award.year}</p>
+                <GlassCard className="p-6 text-center h-full" hover="scale">
+                  <award.icon className="w-12 h-12 text-success mx-auto mb-4" />
+                  <h3 className="text-lg font-bold text-foreground mb-2">{award.title}</h3>
+                  <p className="text-success font-medium">{award.year}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -344,38 +338,38 @@ export default function AboutPage() {
       {/* CTA Section */}
       <div className="relative z-10 py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <GlassCard className="p-12" gradient="warm">
+          <GlassCard className="p-12" variant="brass">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                 Join Our Mission
               </h2>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-xl text-muted-foreground mb-8">
                 Ready to discover the stories behind your treasures? Start your vintage journey today.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <LiquidButton
+                <Button
                   onClick={() => navigate('/')}
-                  variant="primary"
+                  variant="brass"
                   size="lg"
                 >
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5 mr-2" />
                   Start Discovering
-                </LiquidButton>
-                
-                <MagneticButton
+                </Button>
+
+                <Button
                   onClick={() => navigate('/contact')}
-                  variant="glass"
+                  variant="outline"
                   size="lg"
                 >
-                  <Users className="w-5 h-5" />
+                  <Users className="w-5 h-5 mr-2" />
                   Contact Us
-                </MagneticButton>
+                </Button>
               </div>
             </motion.div>
           </GlassCard>

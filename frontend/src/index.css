@@ -3,79 +3,191 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  font-family: 'DM Sans', Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  
-  /* Safe area support for iOS devices with notches */
-  --safe-area-inset-top: env(safe-area-inset-top, 0px);
-  --safe-area-inset-right: env(safe-area-inset-right, 0px);
-  --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-area-inset-left: env(safe-area-inset-left, 0px);
+/* ============================================================
+   VintageVision Dark & Dramatic Theme
+   Inspired by Christie's Auction House
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* Core backgrounds - Deep, rich darkness */
+    --background: 20 10% 6%;              /* #0F0D0B - Deep charcoal */
+    --foreground: 45 10% 90%;             /* #E8E4DE - Warm cream */
+
+    /* Card surfaces - Elevated dark */
+    --card: 20 8% 10%;                    /* #1A1714 - Dark mahogany */
+    --card-foreground: 45 10% 90%;
+
+    /* Primary - Antique brass */
+    --primary: 43 74% 49%;                /* #B8860B - Rich brass */
+    --primary-foreground: 20 10% 6%;
+
+    /* Secondary - Muted dark */
+    --secondary: 20 8% 18%;               /* #2E2820 - Dark bronze */
+    --secondary-foreground: 45 10% 90%;
+
+    /* Muted - Subtle backgrounds */
+    --muted: 20 6% 15%;                   /* #262220 - Muted dark */
+    --muted-foreground: 45 8% 72%;        /* #BDB5A8 - Muted text (WCAG AA 4.5:1) */
+
+    /* Status Colors - Semantic tokens for dark backgrounds */
+    --success: 142 70% 45%;               /* #2A9D4A - Readable green */
+    --success-foreground: 142 70% 85%;    /* Light green text */
+    --success-muted: 142 30% 20%;         /* Dark green background */
+
+    --warning: 43 90% 55%;                /* #E5A91C - Readable amber */
+    --warning-foreground: 43 90% 90%;     /* Light amber text */
+    --warning-muted: 43 40% 18%;          /* Dark amber background */
+
+    --info: 210 70% 55%;                  /* #3B82F6 - Readable blue */
+    --info-foreground: 210 70% 90%;       /* Light blue text */
+    --info-muted: 210 40% 18%;            /* Dark blue background */
+
+    --danger: 0 70% 55%;                  /* #D93636 - Readable red */
+    --danger-foreground: 0 70% 90%;       /* Light red text */
+    --danger-muted: 0 40% 18%;            /* Dark red background */
+
+    /* Accent - Brass highlight */
+    --accent: 43 74% 49%;                 /* Same as primary */
+    --accent-foreground: 20 10% 6%;
+
+    /* Destructive - Deep red */
+    --destructive: 0 72% 45%;             /* #C62828 */
+    --destructive-foreground: 0 0% 100%;
+
+    /* Border and ring */
+    --border: 20 8% 20%;                  /* #342E28 */
+    --input: 20 8% 20%;
+    --ring: 43 74% 49%;                   /* Brass ring */
+
+    /* Chart colors - Dark theme palette */
+    --chart-1: 43 74% 49%;                /* Brass */
+    --chart-2: 45 10% 70%;                /* Cream */
+    --chart-3: 20 8% 40%;                 /* Bronze */
+    --chart-4: 0 0% 50%;                  /* Gray */
+    --chart-5: 43 50% 35%;                /* Dark brass */
+
+    /* Radius - Slightly rounded for elegance */
+    --radius: 0.75rem;
+
+    /* Sidebar (for navigation) */
+    --sidebar: 20 8% 8%;
+    --sidebar-foreground: 45 10% 90%;
+    --sidebar-primary: 43 74% 49%;
+    --sidebar-primary-foreground: 20 10% 6%;
+    --sidebar-accent: 20 8% 15%;
+    --sidebar-accent-foreground: 45 10% 90%;
+    --sidebar-border: 20 8% 18%;
+    --sidebar-ring: 43 74% 49%;
+
+    /* Custom VintageVision tokens */
+    --brass: 43 74% 49%;                  /* #B8860B */
+    --brass-light: 43 70% 58%;            /* #D4A84B */
+    --brass-dark: 43 74% 35%;             /* #8B6914 */
+    --patina: 120 20% 35%;                /* #4A6741 */
+    --velvet: 350 50% 35%;                /* #722F37 */
+
+    /* Safe area support for iOS devices */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  }
+
+  /* Dark theme is the only theme */
+  .dark {
+    /* Same as root - we're always dark */
+  }
 }
 
-/* Performance optimizations */
+@layer base {
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'DM Sans', Inter, system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Typography - Playfair Display for headings */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', Georgia, serif;
+    @apply text-foreground;
+  }
+}
+
+/* ============================================================
+   Dark Theme Scrollbar
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.6);
+}
+
+/* Firefox scrollbar */
 * {
-  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) hsl(var(--muted));
 }
 
-img, video {
-  max-width: 100%;
-  height: auto;
+/* ============================================================
+   Selection Colors - Brass accent
+   ============================================================ */
+::selection {
+  background-color: hsl(var(--primary) / 0.3);
+  color: inherit;
 }
 
-/* Smooth scrolling */
+/* ============================================================
+   Smooth Scrolling (respects reduced motion)
+   ============================================================ */
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
   }
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
-}
-
-/* Selection colors */
-::selection {
-  background-color: rgba(245, 158, 11, 0.3);
-  color: inherit;
-}
-
-/* Mobile-first optimizations */
+/* ============================================================
+   Mobile Optimizations
+   ============================================================ */
 @media (max-width: 768px) {
-  /* Improve touch targets */
   button, a, input, select, textarea {
-    min-height: 44px;
-    min-width: 44px;
+    min-height: 48px;
+    min-width: 48px;
   }
-  
-  /* Optimize for mobile performance */
+
   * {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
   }
-  
-  /* Prevent zoom on input focus */
+
   input, select, textarea {
-    font-size: 16px;
+    font-size: 16px; /* Prevent zoom on focus */
   }
 }
 
-/* PWA optimizations */
+/* ============================================================
+   PWA Optimizations
+   ============================================================ */
 @supports (display-mode: standalone) {
   body {
     padding-top: var(--safe-area-inset-top);
@@ -85,7 +197,9 @@ img, video {
   }
 }
 
-/* Safe area utilities */
+/* ============================================================
+   Safe Area Utilities
+   ============================================================ */
 .safe-area-top {
   padding-top: var(--safe-area-inset-top);
 }
@@ -102,34 +216,211 @@ img, video {
   padding-right: var(--safe-area-inset-right);
 }
 
-/* Touch-friendly scrolling */
+/* ============================================================
+   Touch-friendly Scrolling
+   ============================================================ */
 * {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent overscroll bounce on iOS */
 body {
   overscroll-behavior-y: contain;
 }
 
-/* Print styles */
+/* ============================================================
+   Print Styles
+   ============================================================ */
 @media print {
   * {
-    background: transparent !important;
+    background: white !important;
     color: black !important;
     box-shadow: none !important;
     text-shadow: none !important;
   }
-  
+
   a, a:visited {
     text-decoration: underline;
   }
-  
+
   a[href]:after {
     content: " (" attr(href) ")";
   }
-  
+
   .no-print {
     display: none !important;
   }
+}
+
+/* ============================================================
+   Dramatic Ambient Glow Effect
+   Use: <div className="brass-ambient-glow" />
+   ============================================================ */
+.brass-ambient-glow {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 80% 50% at 50% -20%,
+    hsl(var(--primary) / 0.08),
+    transparent
+  );
+  z-index: 0;
+}
+
+/* ============================================================
+   Glass Morphism Effect
+   ============================================================ */
+.glass {
+  background: hsl(var(--card) / 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border));
+}
+
+.glass-brass {
+  background: hsl(var(--card) / 0.9);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid hsl(var(--primary) / 0.2);
+  box-shadow:
+    0 0 0 1px hsl(var(--primary) / 0.05),
+    0 4px 24px hsl(0 0% 0% / 0.4);
+}
+
+/* ============================================================
+   Brass Border Gradient
+   ============================================================ */
+.brass-border {
+  position: relative;
+}
+
+.brass-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    hsl(var(--primary) / 0.5),
+    hsl(var(--primary) / 0.1),
+    hsl(var(--primary) / 0.3)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ============================================================
+   Dramatic Reveal Animation Classes
+   ============================================================ */
+@keyframes dramatic-reveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes curtain-lift {
+  0% {
+    clip-path: inset(100% 0 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes brass-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--primary) / 0.5);
+  }
+}
+
+@keyframes value-counter {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-dramatic-reveal {
+  animation: dramatic-reveal 0.6s ease-out forwards;
+}
+
+.animate-curtain-lift {
+  animation: curtain-lift 0.8s ease-out forwards;
+}
+
+.animate-brass-glow {
+  animation: brass-glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-value-counter {
+  animation: value-counter 0.4s ease-out forwards;
+}
+
+/* Shimmer skeleton effect */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted)) 0%,
+    hsl(var(--muted-foreground) / 0.1) 50%,
+    hsl(var(--muted)) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* ============================================================
+   Focus Visible - Brass ring
+   ============================================================ */
+:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* ============================================================
+   Custom Component Base Styles
+   ============================================================ */
+
+/* Brass button hover glow */
+.btn-brass-glow:hover {
+  box-shadow:
+    0 0 20px hsl(var(--primary) / 0.4),
+    0 4px 12px hsl(0 0% 0% / 0.3);
+}
+
+/* Card hover lift effect */
+.card-hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 40px hsl(0 0% 0% / 0.4),
+    0 0 0 1px hsl(var(--primary) / 0.1);
 }

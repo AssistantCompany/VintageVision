@@ -16,11 +16,8 @@ import {
   Download,
   Trash2
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import AnimatedBackground from '@/components/ui/AnimatedBackground'
-import FloatingParticles from '@/components/ui/FloatingParticles'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import { useVintageAnalysis } from '@/hooks/useVintageAnalysis'
 
 export default function ProfilePage() {
@@ -108,21 +105,18 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen pb-28 md:pb-8">
-      <AnimatedBackground variant="warm" />
-      <FloatingParticles count={40} className="opacity-20" />
-      
+    <div className="min-h-screen pb-28 md:pb-8 bg-background">
       {/* Header */}
       <div className="relative z-10 p-4">
-        <GlassCard className="p-4" blur="lg">
-          <MagneticButton
+        <GlassCard className="p-4">
+          <Button
             onClick={() => navigate('/')}
-            variant="ghost"
-            size="md"
+            variant="outline"
+            size="default"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
-          </MagneticButton>
+          </Button>
         </GlassCard>
       </div>
 
@@ -135,7 +129,7 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <GlassCard className="p-8" gradient="warm">
+            <GlassCard className="p-8" variant="brass">
               <div className="flex items-start gap-6">
                 {user.avatarUrl ? (
                   <motion.img
@@ -152,7 +146,7 @@ export default function ProfilePage() {
 
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-3xl font-bold text-gray-900">
+                    <h1 className="text-3xl font-bold text-foreground">
                       {user.displayName || user.email.split('@')[0]}
                     </h1>
                     <div className="flex items-center gap-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -161,7 +155,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   
-                  <div className="space-y-2 text-gray-600">
+                  <div className="space-y-2 text-muted-foreground">
                     <div className="flex items-center gap-2">
                       <Mail className="w-4 h-4" />
                       <span>{user.email}</span>
@@ -173,23 +167,23 @@ export default function ProfilePage() {
                   </div>
                   
                   <div className="flex gap-3 mt-4">
-                    <LiquidButton
+                    <Button
                       onClick={() => navigate('/preferences')}
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                     >
-                      <Settings className="w-4 h-4" />
+                      <Settings className="w-4 h-4 mr-2" />
                       Edit Profile
-                    </LiquidButton>
-                    
-                    <MagneticButton
+                    </Button>
+
+                    <Button
                       onClick={() => navigate('/collection')}
-                      variant="glass"
+                      variant="outline"
                       size="sm"
                     >
-                      <Heart className="w-4 h-4" />
+                      <Heart className="w-4 h-4 mr-2" />
                       View Collection
-                    </MagneticButton>
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -235,14 +229,14 @@ export default function ProfilePage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
               >
-                <GlassCard className="p-6 text-center" hover>
+                <GlassCard className="p-6 text-center" hover="scale">
                   <div className={`w-12 h-12 bg-gradient-to-r ${stat.color} rounded-xl flex items-center justify-center mx-auto mb-4`}>
                     <stat.icon className="w-6 h-6 text-white" />
                   </div>
-                  <div className="text-2xl font-bold text-gray-900 mb-1">
+                  <div className="text-2xl font-bold text-foreground mb-1">
                     {loading ? '...' : stat.value}
                   </div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
+                  <div className="text-sm text-muted-foreground">{stat.label}</div>
                 </GlassCard>
               </motion.div>
             ))}
@@ -255,7 +249,7 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Achievements</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-6 text-center">Achievements</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {achievements.map((achievement, index) => (
                 <motion.div
@@ -266,17 +260,17 @@ export default function ProfilePage() {
                 >
                   <GlassCard 
                     className={`p-6 text-center ${achievement.unlocked ? '' : 'opacity-50'}`}
-                    hover={achievement.unlocked}
-                    gradient={achievement.unlocked ? 'warm' : 'default'}
+                    hover={achievement.unlocked ? "scale" : "none"}
+                    variant={achievement.unlocked ? 'brass' : 'default'}
                   >
                     <div className={`w-16 h-16 bg-gradient-to-r ${achievement.color} rounded-xl flex items-center justify-center mx-auto mb-4`}>
                       <achievement.icon className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="font-bold text-gray-900 mb-2">{achievement.title}</h3>
-                    <p className="text-sm text-gray-600">{achievement.description}</p>
+                    <h3 className="font-bold text-foreground mb-2">{achievement.title}</h3>
+                    <p className="text-sm text-muted-foreground">{achievement.description}</p>
                     {achievement.unlocked && (
                       <motion.div
-                        className="mt-3 text-xs font-medium text-green-600"
+                        className="mt-3 text-xs font-medium text-success"
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: 0.5 }}
@@ -296,77 +290,77 @@ export default function ProfilePage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
           >
-            <GlassCard className="p-8" gradient="cool">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h2>
+            <GlassCard className="p-8">
+              <h2 className="text-2xl font-bold text-foreground mb-6">Account Settings</h2>
               
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <motion.button
                   onClick={() => navigate('/preferences')}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100/70 transition-colors text-left"
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
-                  <Settings className="w-6 h-6 text-blue-600" />
+                  <Settings className="w-6 h-6 text-info" />
                   <div>
-                    <div className="font-medium text-gray-900">Preferences</div>
-                    <div className="text-sm text-gray-600">Customize your experience</div>
+                    <div className="font-medium text-foreground">Preferences</div>
+                    <div className="text-sm text-muted-foreground">Customize your experience</div>
                   </div>
                 </motion.button>
 
                 <motion.button
                   onClick={() => navigate('/pricing')}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-amber-100/70 transition-colors text-left"
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-primary/10 transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
-                  <Crown className="w-6 h-6 text-amber-600" />
+                  <Crown className="w-6 h-6 text-primary/80" />
                   <div>
-                    <div className="font-medium text-amber-700">Subscription</div>
-                    <div className="text-sm text-amber-600">Manage your plan</div>
+                    <div className="font-medium text-primary">Subscription</div>
+                    <div className="text-sm text-primary/80">Manage your plan</div>
                   </div>
                 </motion.button>
 
                 <motion.button
                   onClick={() => navigate('/privacy')}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100/70 transition-colors text-left"
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
-                  <Shield className="w-6 h-6 text-green-600" />
+                  <Shield className="w-6 h-6 text-success" />
                   <div>
-                    <div className="font-medium text-gray-900">Privacy</div>
-                    <div className="text-sm text-gray-600">Data and privacy settings</div>
+                    <div className="font-medium text-foreground">Privacy</div>
+                    <div className="text-sm text-muted-foreground">Data and privacy settings</div>
                   </div>
                 </motion.button>
 
                 <motion.button
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-100/70 transition-colors text-left"
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-muted/50 transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
-                  <Download className="w-6 h-6 text-blue-600" />
+                  <Download className="w-6 h-6 text-info" />
                   <div>
-                    <div className="font-medium text-gray-900">Export Data</div>
-                    <div className="text-sm text-gray-600">Download your data</div>
+                    <div className="font-medium text-foreground">Export Data</div>
+                    <div className="text-sm text-muted-foreground">Download your data</div>
                   </div>
                 </motion.button>
 
                 <motion.button
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-red-100/70 transition-colors text-left"
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-destructive/10 transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
-                  <Trash2 className="w-6 h-6 text-red-600" />
+                  <Trash2 className="w-6 h-6 text-destructive/80" />
                   <div>
-                    <div className="font-medium text-red-700">Delete Account</div>
-                    <div className="text-sm text-red-600">Permanently delete account</div>
+                    <div className="font-medium text-destructive">Delete Account</div>
+                    <div className="text-sm text-destructive/80">Permanently delete account</div>
                   </div>
                 </motion.button>
 
                 <motion.button
                   onClick={() => logout()}
-                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-red-100/70 transition-colors text-left"
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-destructive/10 transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
-                  <ArrowLeft className="w-6 h-6 text-red-600" />
+                  <ArrowLeft className="w-6 h-6 text-destructive/80" />
                   <div>
-                    <div className="font-medium text-red-700">Sign Out</div>
-                    <div className="text-sm text-red-600">Log out of your account</div>
+                    <div className="font-medium text-destructive">Sign Out</div>
+                    <div className="text-sm text-destructive/80">Log out of your account</div>
                   </div>
                 </motion.button>
               </div>

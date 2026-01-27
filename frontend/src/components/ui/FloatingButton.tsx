@@ -19,7 +19,7 @@ const sizeClasses = {
 
 const variantClasses = {
   primary: 'from-amber-400 to-orange-500 text-white shadow-amber-500/25',
-  secondary: 'from-gray-100 to-gray-200 text-gray-700 shadow-gray-500/25',
+  secondary: 'from-muted to-muted/80 text-muted-foreground shadow-muted/25',
   accent: 'from-purple-400 to-pink-500 text-white shadow-purple-500/25'
 };
 

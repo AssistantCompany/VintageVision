@@ -17,11 +17,8 @@ import {
   ThumbsUp,
   ThumbsDown
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import SpotlightEffect from '@/components/ui/SpotlightEffect'
-import FloatingParticles from '@/components/ui/FloatingParticles'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import DealRatingBadge from '@/components/enhanced/DealRatingBadge'
 import DomainExpertBadge from '@/components/enhanced/DomainExpertBadge'
 import { VisualEvidenceOverlay } from '@/components/enhanced/VisualEvidenceOverlay'
@@ -60,28 +57,22 @@ export default function OverviewTab({
   onDownload,
   onFeedback
 }: OverviewTabProps) {
+  // Use semantic status colors that work on dark backgrounds
   const confidenceColor = displayAnalysis.confidence >= 0.8
-    ? 'text-green-600'
+    ? 'text-success'
     : displayAnalysis.confidence >= 0.6
-      ? 'text-amber-600'
-      : 'text-red-600'
+      ? 'text-warning'
+      : 'text-danger'
 
   const confidenceBackground = displayAnalysis.confidence >= 0.8
-    ? 'bg-green-100'
+    ? 'bg-success-muted'
     : displayAnalysis.confidence >= 0.6
-      ? 'bg-amber-100'
-      : 'bg-red-100'
+      ? 'bg-warning-muted'
+      : 'bg-danger-muted'
 
   return (
-    <SpotlightEffect className="w-full">
-      <GlassCard className="overflow-hidden" gradient="warm" blur="xl">
-        <FloatingParticles
-          count={30}
-          className="opacity-20"
-          colors={['#f59e0b', '#f97316', '#ef4444', '#8b5cf6']}
-        />
-
-        <div className="relative p-4 sm:p-6 md:p-8">
+    <GlassCard className="overflow-hidden w-full" variant="brass">
+      <div className="relative p-4 sm:p-6 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 md:gap-8 items-start">
             {/* Image Section */}
             <motion.div
@@ -151,18 +142,18 @@ export default function OverviewTab({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.2 }}
               >
-                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3 leading-tight">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-2 sm:mb-3 leading-tight">
                   {analysis.name}
                 </h1>
 
                 {/* Maker Attribution */}
                 {analysis.maker && (
                   <div className="flex items-center gap-2 mb-3">
-                    <Award className="w-4 h-4 text-amber-500" />
-                    <span className="text-lg text-gray-700 font-medium">
+                    <Award className="w-4 h-4 text-primary" />
+                    <span className="text-lg text-foreground font-medium">
                       {analysis.maker}
                       {analysis.makerConfidence && (
-                        <span className="ml-2 text-sm text-gray-400">
+                        <span className="ml-2 text-sm text-muted-foreground">
                           ({Math.round(analysis.makerConfidence * 100)}% confidence)
                         </span>
                       )}
@@ -173,23 +164,23 @@ export default function OverviewTab({
                 {/* Brand and Model */}
                 {analysis.brand && !analysis.maker && (
                   <div className="flex items-center gap-2 mb-3">
-                    <Tag className="w-4 h-4 text-gray-500" />
-                    <span className="text-lg text-gray-700 font-medium">
+                    <Tag className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-lg text-foreground font-medium">
                       {analysis.brand}
                       {analysis.modelNumber && ` ${analysis.modelNumber}`}
                     </span>
                   </div>
                 )}
 
-                {/* Tags Row */}
+                {/* Tags Row - using dark-theme appropriate colors */}
                 <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
                   {analysis.productCategory && (
                     <span className={cn(
                       "px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5",
-                      analysis.productCategory === 'antique' ? 'bg-amber-100 text-amber-800' :
-                      analysis.productCategory === 'vintage' ? 'bg-orange-100 text-orange-800' :
-                      analysis.productCategory === 'modern_branded' ? 'bg-blue-100 text-blue-800' :
-                      'bg-gray-100 text-gray-800'
+                      analysis.productCategory === 'antique' ? 'bg-warning-muted text-warning' :
+                      analysis.productCategory === 'vintage' ? 'bg-primary/20 text-primary' :
+                      analysis.productCategory === 'modern_branded' ? 'bg-info-muted text-info' :
+                      'bg-muted text-muted-foreground'
                     )}>
                       {analysis.productCategory === 'antique' ? 'Antique' :
                        analysis.productCategory === 'vintage' ? 'Vintage' :
@@ -199,28 +190,28 @@ export default function OverviewTab({
                   )}
 
                   {analysis.era && (
-                    <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <span className="px-3 py-1.5 bg-info-muted text-info rounded-full text-xs font-semibold flex items-center gap-1.5">
                       <Clock className="w-3 h-3" />
                       {analysis.era}
                     </span>
                   )}
 
                   {analysis.style && (
-                    <span className="px-3 py-1.5 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <span className="px-3 py-1.5 bg-secondary text-secondary-foreground rounded-full text-xs font-semibold flex items-center gap-1.5">
                       <Palette className="w-3 h-3" />
                       {analysis.style}
                     </span>
                   )}
 
                   {analysis.originRegion && (
-                    <span className="px-3 py-1.5 bg-teal-100 text-teal-800 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <span className="px-3 py-1.5 bg-patina/30 text-patina rounded-full text-xs font-semibold flex items-center gap-1.5">
                       <Globe className="w-3 h-3" />
                       {analysis.originRegion}
                     </span>
                   )}
 
                   {analysis.periodStart && (
-                    <span className="px-3 py-1.5 bg-indigo-100 text-indigo-800 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                    <span className="px-3 py-1.5 bg-primary/20 text-primary rounded-full text-xs font-semibold flex items-center gap-1.5">
                       <Calendar className="w-3 h-3" />
                       c. {analysis.periodStart}{analysis.periodEnd && analysis.periodEnd !== analysis.periodStart ? `-${analysis.periodEnd}` : ''}
                     </span>
@@ -230,14 +221,14 @@ export default function OverviewTab({
                 {/* Value Display */}
                 <div className="flex flex-wrap gap-3 mb-4">
                   {analysis.currentRetailPrice && (
-                    <span className="px-4 py-2 bg-green-100 text-green-800 rounded-xl text-sm font-semibold flex items-center gap-2">
+                    <span className="px-4 py-2 bg-success-muted text-success rounded-xl text-sm font-semibold flex items-center gap-2">
                       <ShoppingCart className="w-4 h-4" />
                       {formatPrice(analysis.currentRetailPrice)} retail
                     </span>
                   )}
 
                   {!analysis.currentRetailPrice && (analysis.estimatedValueMin || analysis.estimatedValueMax) && (
-                    <span className="px-4 py-2 bg-emerald-100 text-emerald-800 rounded-xl text-sm font-semibold flex items-center gap-2">
+                    <span className="px-4 py-2 bg-success-muted text-success rounded-xl text-sm font-semibold flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
                       {formatPriceRange(analysis.estimatedValueMin, analysis.estimatedValueMax)}
                     </span>
@@ -282,7 +273,7 @@ export default function OverviewTab({
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 }}
               >
-                <p className="text-gray-700 leading-relaxed">
+                <p className="text-foreground/90 leading-relaxed">
                   {analysis.description}
                 </p>
               </motion.div>
@@ -294,84 +285,83 @@ export default function OverviewTab({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
-                <LiquidButton
+                <Button
                   onClick={onShowSaveDialog}
-                  variant="primary"
-                  size="md"
+                  variant="brass"
+                  size="default"
                   className="w-full sm:w-auto justify-center"
                 >
                   <Heart className="w-5 h-5" />
                   <span>Save</span>
-                </LiquidButton>
+                </Button>
 
                 <div className="flex gap-2 sm:gap-3">
-                  <MagneticButton
+                  <Button
                     onClick={onShare}
-                    variant="glass"
-                    size="md"
+                    variant="outline"
+                    size="default"
                     className="flex-1 sm:flex-none justify-center"
                   >
                     <Share2 className="w-5 h-5" />
                     <span>Share</span>
-                  </MagneticButton>
+                  </Button>
 
-                  <MagneticButton
+                  <Button
                     onClick={onPDFExport}
-                    variant="ghost"
-                    size="md"
+                    variant="outline"
+                    size="default"
                   >
                     <FileText className="w-5 h-5" />
-                  </MagneticButton>
+                  </Button>
 
-                  <MagneticButton
+                  <Button
                     onClick={onDownload}
-                    variant="ghost"
-                    size="md"
+                    variant="outline"
+                    size="default"
                   >
                     <Download className="w-5 h-5" />
-                  </MagneticButton>
+                  </Button>
                 </div>
               </motion.div>
 
               {/* Feedback Section */}
               {user && (
                 <motion.div
-                  className="border-t border-gray-200/50 pt-4"
+                  className="border-t border-border pt-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6 }}
                 >
-                  <p className="text-sm text-gray-600 mb-3">
+                  <p className="text-sm text-muted-foreground mb-3">
                     Is this identification accurate?
                   </p>
 
                   <div className="flex gap-2">
-                    <MagneticButton
+                    <Button
                       onClick={() => onFeedback(true)}
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="text-green-600 hover:bg-green-50"
+                      className="text-success hover:bg-success-muted"
                     >
                       <ThumbsUp className="w-4 h-4" />
                       <span>Yes</span>
-                    </MagneticButton>
+                    </Button>
 
-                    <MagneticButton
+                    <Button
                       onClick={() => onFeedback(false)}
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      className="text-red-600 hover:bg-red-50"
+                      className="text-danger hover:bg-danger-muted"
                     >
                       <ThumbsDown className="w-4 h-4" />
                       <span>No</span>
-                    </MagneticButton>
+                    </Button>
                   </div>
                 </motion.div>
               )}
             </div>
           </div>
         </div>
-      </GlassCard>
-    </SpotlightEffect>
+    </GlassCard>
   )
 }

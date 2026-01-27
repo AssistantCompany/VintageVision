@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Command } from 'cmdk'
 import { motion, AnimatePresence } from 'framer-motion'
-import { 
-  Search, 
-  Camera, 
-  Heart, 
-  Star, 
-  Settings, 
+import {
+  Search,
+  Camera,
+  Heart,
+  Star,
+  Settings,
   User,
   Home,
   LogOut,
@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import GlassCard from './GlassCard'
+import { GlassCard } from './glass-card'
 import { cn, trackEvent } from '@/lib/utils'
 
 interface CommandPaletteProps {
@@ -22,7 +22,18 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void
 }
 
-const commands = [
+interface CommandItem {
+  id: string
+  label: string
+  description: string
+  icon: typeof Search
+  action: string
+  path?: string
+  shortcut?: string
+  requiresAuth?: boolean
+}
+
+const commands: CommandItem[] = [
   {
     id: 'identify',
     label: 'Identify Item',
@@ -94,7 +105,7 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
         onOpenChange(!open)
         trackEvent('command_palette_toggle', { method: 'keyboard' })
       }
-      
+
       if (e.key === 'Escape') {
         onOpenChange(false)
       }
@@ -104,12 +115,12 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [open, onOpenChange])
 
-  const handleSelect = (command: any) => {
-    trackEvent('command_palette_select', { commandId: command.id })
-    
+  const handleSelect = (command: { action: string; path?: string }) => {
+    trackEvent('command_palette_select', { commandId: command.action })
+
     switch (command.action) {
       case 'navigate':
-        navigate(command.path)
+        if (command.path) navigate(command.path)
         break
       case 'logout':
         logout()
@@ -117,7 +128,7 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
       default:
         break
     }
-    
+
     onOpenChange(false)
     setSearch('')
   }
@@ -134,7 +145,7 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -149,19 +160,19 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
             exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <GlassCard className="overflow-hidden shadow-2xl" gradient="default">
+            <GlassCard variant="brass" className="overflow-hidden shadow-2xl" padding="none">
               <Command className="w-full">
                 {/* Search Input */}
-                <div className="flex items-center gap-3 p-4 border-b border-gray-200/50">
-                  <Search className="w-5 h-5 text-gray-400" />
+                <div className="flex items-center gap-3 p-4 border-b border-border">
+                  <Search className="w-5 h-5 text-muted-foreground" />
                   <Command.Input
                     value={search}
                     onValueChange={setSearch}
                     placeholder="Search commands..."
-                    className="flex-1 bg-transparent border-none outline-none text-gray-900 placeholder-gray-500 text-lg"
+                    className="flex-1 bg-transparent border-none outline-none text-foreground placeholder-muted-foreground text-lg"
                   />
                   <div className="flex gap-1">
-                    <kbd className="px-2 py-1 text-xs bg-gray-100 rounded border border-gray-300 text-gray-600">
+                    <kbd className="px-2 py-1 text-xs bg-muted rounded border border-border text-muted-foreground">
                       Esc
                     </kbd>
                   </div>
@@ -169,12 +180,12 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
 
                 {/* Commands List */}
                 <Command.List className="max-h-96 overflow-y-auto p-2">
-                  <Command.Empty className="p-8 text-center text-gray-500">
+                  <Command.Empty className="p-8 text-center text-muted-foreground">
                     No commands found.
                   </Command.Empty>
 
                   {/* Main Commands */}
-                  <Command.Group heading="Actions" className="mb-4">
+                  <Command.Group heading="Actions" className="mb-4 text-muted-foreground text-xs px-2 py-1">
                     {filteredCommands.map((command) => (
                       <Command.Item
                         key={command.id}
@@ -185,27 +196,27 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
                         <motion.div
                           className={cn(
                             'flex items-center gap-3 w-full p-3 rounded-xl transition-all duration-200',
-                            'hover:bg-gray-100/70 cursor-pointer',
-                            'data-[selected]:bg-amber-100/70 data-[selected]:text-amber-900'
+                            'hover:bg-secondary cursor-pointer',
+                            'data-[selected]:bg-primary/20 data-[selected]:text-primary'
                           )}
                           whileHover={{ x: 4 }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <div className="w-8 h-8 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <command.icon className="w-4 h-4 text-white" />
+                          <div className="w-8 h-8 bg-gradient-to-r from-primary to-brass-light rounded-lg flex items-center justify-center flex-shrink-0">
+                            <command.icon className="w-4 h-4 text-primary-foreground" />
                           </div>
-                          
+
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-gray-900 group-hover:text-amber-900 transition-colors">
+                            <div className="font-medium text-foreground group-hover:text-primary transition-colors">
                               {command.label}
                             </div>
-                            <div className="text-sm text-gray-500 group-hover:text-amber-700 transition-colors">
+                            <div className="text-sm text-muted-foreground group-hover:text-primary/70 transition-colors">
                               {command.description}
                             </div>
                           </div>
-                          
+
                           {command.shortcut && (
-                            <kbd className="px-2 py-1 text-xs bg-gray-200/70 rounded border border-gray-300/70 text-gray-600 group-hover:bg-amber-200/70 group-hover:text-amber-800 transition-colors">
+                            <kbd className="px-2 py-1 text-xs bg-muted rounded border border-border text-muted-foreground group-hover:bg-primary/20 group-hover:text-primary transition-colors">
                               {command.shortcut}
                             </kbd>
                           )}
@@ -216,22 +227,22 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
 
                   {/* User Commands */}
                   {user && (
-                    <Command.Group heading="Account" className="border-t border-gray-200/50 pt-2">
+                    <Command.Group heading="Account" className="border-t border-border pt-2 text-muted-foreground text-xs px-2 py-1">
                       <Command.Item
                         value="profile"
                         onSelect={() => handleSelect({ action: 'navigate', path: '/profile' })}
                         className="group"
                       >
                         <motion.div
-                          className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-gray-100/70 cursor-pointer transition-all duration-200"
+                          className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-secondary cursor-pointer transition-all duration-200"
                           whileHover={{ x: 4 }}
                         >
-                          <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
                             <User className="w-4 h-4 text-white" />
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900">{user.google_user_data?.name || user.displayName || user.email}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
+                            <div className="font-medium text-foreground">{user.displayName || user.email}</div>
+                            <div className="text-sm text-muted-foreground">{user.email}</div>
                           </div>
                         </motion.div>
                       </Command.Item>
@@ -242,15 +253,15 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
                         className="group"
                       >
                         <motion.div
-                          className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-red-100/70 cursor-pointer transition-all duration-200"
+                          className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-destructive/10 cursor-pointer transition-all duration-200"
                           whileHover={{ x: 4 }}
                         >
-                          <div className="w-8 h-8 bg-gradient-to-r from-red-400 to-red-500 rounded-lg flex items-center justify-center">
+                          <div className="w-8 h-8 bg-gradient-to-r from-destructive to-red-500 rounded-lg flex items-center justify-center">
                             <LogOut className="w-4 h-4 text-white" />
                           </div>
                           <div className="flex-1">
-                            <div className="font-medium text-gray-900 group-hover:text-red-900">Sign Out</div>
-                            <div className="text-sm text-gray-500 group-hover:text-red-700">Log out of your account</div>
+                            <div className="font-medium text-foreground group-hover:text-destructive">Sign Out</div>
+                            <div className="text-sm text-muted-foreground group-hover:text-destructive/70">Log out of your account</div>
                           </div>
                         </motion.div>
                       </Command.Item>
@@ -259,17 +270,17 @@ export default function CommandPalette({ open, onOpenChange }: CommandPalettePro
                 </Command.List>
 
                 {/* Footer */}
-                <div className="border-t border-gray-200/50 p-3 bg-gray-50/50">
-                  <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="border-t border-border p-3 bg-card/50">
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
-                      <kbd className="px-1.5 py-0.5 bg-gray-200 rounded border">↑↓</kbd>
+                      <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">↑↓</kbd>
                       <span>Navigate</span>
-                      <kbd className="px-1.5 py-0.5 bg-gray-200 rounded border">↵</kbd>
+                      <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">↵</kbd>
                       <span>Select</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <kbd className="px-1.5 py-0.5 bg-gray-200 rounded border">⌘</kbd>
-                      <kbd className="px-1.5 py-0.5 bg-gray-200 rounded border">K</kbd>
+                      <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">⌘</kbd>
+                      <kbd className="px-1.5 py-0.5 bg-muted rounded border border-border">K</kbd>
                       <span>to toggle</span>
                     </div>
                   </div>

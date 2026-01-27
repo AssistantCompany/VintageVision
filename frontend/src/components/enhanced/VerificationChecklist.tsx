@@ -10,7 +10,7 @@ import {
   Camera,
   HelpCircle
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import { cn } from '@/lib/utils'
 
 interface VerificationChecklistProps {
@@ -61,7 +61,7 @@ export default function VerificationChecklist({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
     >
-      <GlassCard className="overflow-hidden" gradient="emerald">
+      <GlassCard className="overflow-hidden" >
         {/* Header */}
         <button
           onClick={() => setIsExpanded(!isExpanded)}
@@ -79,8 +79,8 @@ export default function VerificationChecklist({
               <ClipboardCheck className="w-5 h-5 text-white" />
             </div>
             <div className="text-left">
-              <h3 className="font-bold text-gray-900">Verification Checklist</h3>
-              <p className="text-sm text-gray-500">
+              <h3 className="font-bold text-foreground">Verification Checklist</h3>
+              <p className="text-sm text-muted-foreground">
                 {checkedItems.size} of {tips.length} completed
               </p>
             </div>
@@ -96,7 +96,7 @@ export default function VerificationChecklist({
                   stroke="currentColor"
                   strokeWidth="3"
                   fill="none"
-                  className="text-gray-200"
+                  className="text-muted"
                 />
                 <motion.circle
                   cx="20"
@@ -116,14 +116,14 @@ export default function VerificationChecklist({
                   }}
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-600">
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-muted-foreground">
                 {Math.round(completionPercent)}%
               </span>
             </div>
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-400" />
+              <ChevronUp className="w-5 h-5 text-muted-foreground" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-400" />
+              <ChevronDown className="w-5 h-5 text-muted-foreground" />
             )}
           </div>
         </button>
@@ -171,8 +171,8 @@ export default function VerificationChecklist({
                           className={cn(
                             'w-full flex items-start gap-3 p-4 rounded-xl border-2 transition-all text-left',
                             isChecked
-                              ? 'bg-green-50 border-green-300'
-                              : 'bg-white/50 border-gray-200 hover:border-teal-300 hover:bg-teal-50/50'
+                              ? 'bg-success-muted border-success/40'
+                              : 'bg-card/50 border-border hover:border-accent/50 hover:bg-accent/10'
                           )}
                         >
                           <div className="flex-shrink-0 mt-0.5">
@@ -185,20 +185,20 @@ export default function VerificationChecklist({
                                 <CheckSquare className="w-5 h-5 text-green-500" />
                               </motion.div>
                             ) : (
-                              <Square className="w-5 h-5 text-gray-400" />
+                              <Square className="w-5 h-5 text-muted-foreground" />
                             )}
                           </div>
                           <div className="flex-1">
                             <p className={cn(
                               'text-sm leading-relaxed',
-                              isChecked ? 'text-green-800 line-through' : 'text-gray-700'
+                              isChecked ? 'text-success line-through' : 'text-muted-foreground'
                             )}>
                               {tip}
                             </p>
                           </div>
                           <Icon className={cn(
                             'w-4 h-4 flex-shrink-0',
-                            isChecked ? 'text-green-400' : 'text-gray-300'
+                            isChecked ? 'text-success/60' : 'text-muted-foreground/50'
                           )} />
                         </button>
                       </motion.li>
@@ -207,7 +207,7 @@ export default function VerificationChecklist({
                 </ul>
 
                 {/* Helper Text */}
-                <p className="mt-4 text-xs text-gray-500 text-center">
+                <p className="mt-4 text-xs text-muted-foreground text-center">
                   Check each item as you verify it before making a purchase decision
                 </p>
               </div>

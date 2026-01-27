@@ -62,9 +62,9 @@ const TouchOptimizedButton = forwardRef<HTMLButtonElement, TouchOptimizedButtonP
 
     const variantStyles = {
       primary: 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 text-white shadow-lg shadow-amber-500/25 border-0',
-      secondary: 'bg-white text-gray-900 border border-gray-300 shadow-md hover:shadow-lg',
-      ghost: 'bg-transparent text-gray-700 hover:bg-gray-100 border border-transparent hover:border-gray-200',
-      glass: 'bg-white/10 backdrop-blur-xl border border-white/20 text-gray-900 shadow-xl',
+      secondary: 'bg-white text-foreground border border-border shadow-md hover:shadow-lg',
+      ghost: 'bg-transparent text-muted-foreground hover:bg-muted border border-transparent hover:border-border',
+      glass: 'bg-white/10 backdrop-blur-xl border border-white/20 text-foreground shadow-xl',
       danger: 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-lg shadow-red-500/25'
     }
 

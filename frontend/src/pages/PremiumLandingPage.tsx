@@ -17,11 +17,8 @@ import {
   Palette,
   BookOpen
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import SpotlightEffect from '@/components/ui/SpotlightEffect'
-import FloatingParticles from '@/components/ui/FloatingParticles'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import UserMenu from '@/components/shared/UserMenu'
 import SimpleImageUploader, { ConsensusMode } from '@/components/enhanced/SimpleImageUploader'
 import PremiumAnalysisResult from '@/components/enhanced/PremiumAnalysisResult'
@@ -235,17 +232,11 @@ export default function PremiumLandingPage() {
   return (
     <div className="min-h-screen overflow-hidden pb-28 md:pb-8">
       {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
-        <FloatingParticles 
-          count={100} 
-          className="opacity-30"
-          colors={['#f59e0b', '#f97316', '#ef4444', '#8b5cf6', '#06b6d4']}
-        />
-      </div>
+      <div className="fixed inset-0 bg-background" />
       
       {/* Navigation */}
       <nav className="relative z-[100] p-4">
-        <GlassCard className="max-w-7xl mx-auto overflow-visible" blur="xl">
+        <GlassCard className="max-w-7xl mx-auto overflow-visible">
           <div className="flex items-center justify-between p-4 overflow-visible">
             <motion.div 
               className="flex items-center gap-3"
@@ -255,50 +246,50 @@ export default function PremiumLandingPage() {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">VintageVision</h1>
-                <p className="text-xs text-gray-600">AI Antique Expert</p>
+                <h1 className="text-xl font-bold text-foreground">VintageVision</h1>
+                <p className="text-xs text-muted-foreground">AI Antique Expert</p>
               </div>
             </motion.div>
             
             <div className="flex items-center gap-4">
               <div className="hidden md:flex items-center gap-4">
-                <MagneticButton 
+                <Button
                   onClick={() => navigate('/features')}
-                  variant="ghost"
-                  size="md"
+                  variant="outline"
+                  size="default"
                 >
                   Features
-                </MagneticButton>
-                <MagneticButton 
+                </Button>
+                <Button
                   onClick={() => navigate('/about')}
-                  variant="ghost"
-                  size="md"
+                  variant="outline"
+                  size="default"
                 >
                   About
-                </MagneticButton>
-                <MagneticButton 
+                </Button>
+                <Button
                   onClick={() => navigate('/pricing')}
-                  variant="ghost"
-                  size="md"
+                  variant="outline"
+                  size="default"
                 >
                   Pricing
-                </MagneticButton>
-                <MagneticButton 
+                </Button>
+                <Button
                   onClick={() => navigate('/help')}
-                  variant="ghost"
-                  size="md"
+                  variant="outline"
+                  size="default"
                 >
                   Help
-                </MagneticButton>
+                </Button>
               </div>
-              
+
               {user ? (
                 <UserMenu />
               ) : (
-                <LiquidButton onClick={redirectToLogin}>
-                  <Crown className="w-4 h-4" />
+                <Button onClick={redirectToLogin} variant="brass">
+                  <Crown className="w-4 h-4 mr-2" />
                   Sign In
-                </LiquidButton>
+                </Button>
               )}
             </div>
           </div>
@@ -330,7 +321,7 @@ export default function PremiumLandingPage() {
                 <span className="text-sm font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                   #1 AI Antique Identifier
                 </span>
-                <TrendingUp className="w-4 h-4 text-green-500" />
+                <TrendingUp className="w-4 h-4 text-success" />
               </motion.div>
 
               <div className="text-center space-y-6 md:space-y-8">
@@ -340,14 +331,14 @@ export default function PremiumLandingPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.2 }}
                 >
-                  <h1 className="text-4xl md:text-6xl font-bold text-gray-900 leading-tight mb-6">
+                  <h1 className="text-4xl md:text-6xl font-bold text-foreground leading-tight mb-6">
                     Turn your phone into an{' '}
                     <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
                       antique expert
                     </span>
                   </h1>
 
-                  <p className="text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
+                  <p className="text-xl md:text-2xl text-muted-foreground max-w-4xl mx-auto leading-relaxed">
                     Instantly identify vintage and antique items, learn their fascinating histories,
                     discover their market value, and get expert styling tips with the power of AI.
                   </p>
@@ -381,7 +372,7 @@ export default function PremiumLandingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
                   >
-                    <GlassCard className="p-6 max-w-md mx-auto border-red-200/50" gradient="rose">
+                    <GlassCard className="p-6 max-w-md mx-auto border-red-200/50">
                       <div className="flex items-center gap-3 text-red-700">
                         <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
                         <p className="font-medium">{progress.error}</p>
@@ -424,8 +415,7 @@ export default function PremiumLandingPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.8 + index * 0.1 }}
                       >
-                        <SpotlightEffect>
-                          <GlassCard className="p-8 text-center h-full" hover gradient="default">
+                        <GlassCard className="p-8 text-center h-full" hover="scale">
                             <motion.div
                               className={`w-16 h-16 mx-auto mb-6 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center shadow-lg`}
                               whileHover={{ scale: 1.1, rotate: 5 }}
@@ -434,10 +424,9 @@ export default function PremiumLandingPage() {
                               <feature.icon className="w-8 h-8 text-white" />
                             </motion.div>
 
-                            <h3 className="text-xl font-bold text-gray-900 mb-4">{feature.title}</h3>
-                            <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                            <h3 className="text-xl font-bold text-foreground mb-4">{feature.title}</h3>
+                            <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
                           </GlassCard>
-                        </SpotlightEffect>
                       </motion.div>
                     ))}
                   </motion.div>
@@ -450,14 +439,14 @@ export default function PremiumLandingPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 1.0 }}
                   >
-                    <GlassCard className="p-6 max-w-2xl mx-auto" gradient="cool">
+                    <GlassCard className="p-6 max-w-2xl mx-auto">
                       <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
                           <Sparkles className="w-6 h-6 text-white" />
                         </div>
                         <div className="text-left">
-                          <h4 className="font-bold text-blue-900 mb-1">Unlock the Full Experience</h4>
-                          <p className="text-blue-700 text-sm">
+                          <h4 className="font-bold text-foreground mb-1">Unlock the Full Experience</h4>
+                          <p className="text-muted-foreground text-sm">
                             Sign in to save items to your personal collection, set style preferences,
                             and get personalized recommendations!
                           </p>
@@ -510,7 +499,7 @@ export default function PremiumLandingPage() {
         className="relative z-10 py-8 md:py-12 px-4"
       >
         <div className="max-w-7xl mx-auto">
-          <GlassCard className="p-8 overflow-hidden" blur="lg" gradient="cool">
+          <GlassCard className="p-8 overflow-hidden">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {stats.map((stat, index) => (
                 <motion.div
@@ -527,14 +516,14 @@ export default function PremiumLandingPage() {
                     <stat.icon className="w-6 h-6 text-white" />
                   </motion.div>
                   <motion.div 
-                    className="text-3xl md:text-4xl font-bold text-gray-900 mb-2"
+                    className="text-3xl md:text-4xl font-bold text-foreground mb-2"
                     whileHover={{ scale: 1.05 }}
                   >
                     <span className="bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                       {stat.number}
                     </span>
                   </motion.div>
-                  <p className="text-gray-600 font-medium">{stat.label}</p>
+                  <p className="text-muted-foreground font-medium">{stat.label}</p>
                 </motion.div>
               ))}
             </div>
@@ -555,13 +544,13 @@ export default function PremiumLandingPage() {
             animate={featuresInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
               Why Choose{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 VintageVision?
               </span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
               Experience the future of antique identification with cutting-edge AI technology
             </p>
           </motion.div>
@@ -576,12 +565,10 @@ export default function PremiumLandingPage() {
                   animate={featuresInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.6, delay: feature.delay }}
                 >
-                  <SpotlightEffect>
-                    <GlassCard 
-                      className="p-8 h-full group cursor-pointer" 
-                      hover
-                      gradient="default"
-                    >
+                  <GlassCard
+                    className="p-8 h-full group cursor-pointer"
+                    hover="scale"
+                  >
                       <motion.div
                         className={`w-14 h-14 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center mb-6 shadow-lg`}
                         whileHover={{ scale: 1.1, rotate: 5 }}
@@ -590,11 +577,11 @@ export default function PremiumLandingPage() {
                         <Icon className="w-7 h-7 text-white" />
                       </motion.div>
                       
-                      <h3 className="text-xl font-bold text-gray-900 mb-4 group-hover:text-purple-700 transition-colors">
+                      <h3 className="text-xl font-bold text-foreground mb-4 group-hover:text-purple-700 transition-colors">
                         {feature.title}
                       </h3>
                       
-                      <p className="text-gray-600 leading-relaxed group-hover:text-gray-700 transition-colors">
+                      <p className="text-muted-foreground leading-relaxed group-hover:text-muted-foreground transition-colors">
                         {feature.description}
                       </p>
 
@@ -604,10 +591,9 @@ export default function PremiumLandingPage() {
                         initial={{ x: -10 }}
                         whileHover={{ x: 0 }}
                       >
-                        <ArrowRight className="w-5 h-5 text-purple-600" />
+                        <ArrowRight className="w-5 h-5 text-primary" />
                       </motion.div>
                     </GlassCard>
-                  </SpotlightEffect>
                 </motion.div>
               )
             })}
@@ -624,13 +610,13 @@ export default function PremiumLandingPage() {
             animate={testimonialsInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.8 }}
           >
-            <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
               Perfect for{' '}
               <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 Everyone
               </span>
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-muted-foreground">
               VintageVision helps collectors, designers, and enthusiasts alike
             </p>
           </motion.div>
@@ -643,7 +629,7 @@ export default function PremiumLandingPage() {
                 animate={testimonialsInView ? { opacity: 1, y: 0 } : {}}
                 transition={{ duration: 0.6, delay: idx * 0.2 }}
               >
-                <GlassCard className="p-8 h-full" gradient="warm" hover>
+                <GlassCard className="p-8 h-full" variant="brass" hover="scale">
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
                       {useCase.icon === 'Palette' && <Palette className="w-8 h-8 text-white" />}
@@ -651,11 +637,11 @@ export default function PremiumLandingPage() {
                       {useCase.icon === 'Heart' && <Heart className="w-8 h-8 text-white" />}
                     </div>
                     <div>
-                      <h4 className="font-bold text-gray-900 text-lg">{useCase.role}</h4>
+                      <h4 className="font-bold text-foreground text-lg">{useCase.role}</h4>
                     </div>
                   </div>
 
-                  <p className="text-gray-700 leading-relaxed">
+                  <p className="text-muted-foreground leading-relaxed">
                     {useCase.benefit}
                   </p>
                 </GlassCard>
@@ -668,13 +654,7 @@ export default function PremiumLandingPage() {
       {/* CTA Section */}
       <section ref={ctaRef} className="relative z-10 py-10 md:py-14 px-4">
         <div className="max-w-5xl mx-auto text-center">
-          <SpotlightEffect>
-            <GlassCard className="p-8 md:p-12 lg:p-16 overflow-hidden" gradient="warm" blur="xl">
-              <FloatingParticles 
-                count={30} 
-                className="opacity-40"
-                colors={['#f59e0b', '#f97316', '#ef4444']}
-              />
+          <GlassCard className="p-8 md:p-12 lg:p-16 overflow-hidden" variant="brass">
               
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -682,7 +662,7 @@ export default function PremiumLandingPage() {
                 transition={{ duration: 0.8 }}
                 className="relative z-10"
               >
-                <h2 className="text-4xl md:text-6xl font-bold text-gray-900 mb-8">
+                <h2 className="text-4xl md:text-6xl font-bold text-foreground mb-8">
                   Ready to Start Your
                   <br />
                   <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
@@ -690,33 +670,33 @@ export default function PremiumLandingPage() {
                   </span>
                 </h2>
                 
-                <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto">
+                <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
                   Join collectors worldwide and discover the stories behind your treasures
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
-                  <LiquidButton 
+                  <Button
                     onClick={handleGetStarted}
-                    variant="primary"
+                    variant="brass"
                     size="lg"
                     className="px-10 py-5 text-xl"
                   >
-                    <Search className="w-6 h-6" />
+                    <Search className="w-6 h-6 mr-2" />
                     <span>Get Started Free</span>
-                  </LiquidButton>
-                  
-                  <MagneticButton
+                  </Button>
+
+                  <Button
                     onClick={() => navigate('/pricing')}
-                    variant="glass"
+                    variant="outline"
                     size="lg"
                     className="px-10 py-5 text-xl"
                   >
-                    <Crown className="w-6 h-6" />
+                    <Crown className="w-6 h-6 mr-2" />
                     <span>View Pricing</span>
-                  </MagneticButton>
+                  </Button>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-8 text-sm text-gray-600">
+                <div className="flex flex-wrap justify-center gap-8 text-sm text-muted-foreground">
                   {[
                     { icon: CheckCircle, text: 'Free to start' },
                     { icon: CheckCircle, text: 'No credit card required' },
@@ -729,49 +709,48 @@ export default function PremiumLandingPage() {
                       animate={ctaInView ? { opacity: 1, scale: 1 } : {}}
                       transition={{ delay: 1 + itemIdx * 0.1 }}
                     >
-                      <item.icon className="w-4 h-4 text-green-500" />
+                      <item.icon className="w-4 h-4 text-success" />
                       <span className="font-medium">{item.text}</span>
                     </motion.div>
                   ))}
                 </div>
               </motion.div>
             </GlassCard>
-          </SpotlightEffect>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="relative z-10 py-12 md:py-16 px-4 border-t border-white/20">
         <div className="max-w-7xl mx-auto">
-          <GlassCard className="p-8" blur="lg">
+          <GlassCard className="p-8">
             <div className="grid md:grid-cols-4 gap-8">
               <div>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
                     <Sparkles className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-xl font-bold text-gray-900">VintageVision</span>
+                  <span className="text-xl font-bold text-foreground">VintageVision</span>
                 </div>
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   Discover the story behind every treasure with AI-powered vintage identification.
                 </p>
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-4">Product</h4>
+                <h4 className="font-semibold text-foreground mb-4">Product</h4>
                 <ul className="space-y-3 text-sm">
                   <li>
-                    <button onClick={() => navigate('/features')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/features')} className="text-muted-foreground hover:text-foreground transition-colors">
                       Features
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => navigate('/pricing')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/pricing')} className="text-muted-foreground hover:text-foreground transition-colors">
                       Pricing
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => navigate('/help')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/help')} className="text-muted-foreground hover:text-foreground transition-colors">
                       Help & Support
                     </button>
                   </li>
@@ -779,15 +758,15 @@ export default function PremiumLandingPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-4">Company</h4>
+                <h4 className="font-semibold text-foreground mb-4">Company</h4>
                 <ul className="space-y-3 text-sm">
                   <li>
-                    <button onClick={() => navigate('/about')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/about')} className="text-muted-foreground hover:text-foreground transition-colors">
                       About Us
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => navigate('/contact')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/contact')} className="text-muted-foreground hover:text-foreground transition-colors">
                       Contact
                     </button>
                   </li>
@@ -795,20 +774,20 @@ export default function PremiumLandingPage() {
               </div>
 
               <div>
-                <h4 className="font-semibold text-gray-900 mb-4">Legal</h4>
+                <h4 className="font-semibold text-foreground mb-4">Legal</h4>
                 <ul className="space-y-3 text-sm">
                   <li>
-                    <button onClick={() => navigate('/privacy')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/privacy')} className="text-muted-foreground hover:text-foreground transition-colors">
                       Privacy Policy
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => navigate('/terms')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/terms')} className="text-muted-foreground hover:text-foreground transition-colors">
                       Terms of Service
                     </button>
                   </li>
                   <li>
-                    <button onClick={() => navigate('/cookies')} className="text-gray-600 hover:text-gray-900 transition-colors">
+                    <button onClick={() => navigate('/cookies')} className="text-muted-foreground hover:text-foreground transition-colors">
                       Cookie Policy
                     </button>
                   </li>
@@ -816,11 +795,11 @@ export default function PremiumLandingPage() {
               </div>
             </div>
 
-            <div className="border-t border-gray-200 mt-8 pt-8 text-center">
-              <p className="text-sm text-gray-600">
+            <div className="border-t border-border mt-8 pt-8 text-center">
+              <p className="text-sm text-muted-foreground">
                 &copy; {new Date().getFullYear()} VintageVision. All rights reserved.
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-muted-foreground mt-2">
                 Made with care for antique enthusiasts worldwide
               </p>
             </div>

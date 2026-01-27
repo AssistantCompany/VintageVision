@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 import { Shield, ShieldAlert, ShieldCheck, AlertTriangle, Camera, CheckCircle2, XCircle, UserCheck } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import {
   ItemAnalysis,
   AuthenticityRisk,
@@ -37,7 +37,7 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
       case 'very_high':
         return <ShieldAlert className="w-8 h-8 text-red-500" />
       default:
-        return <Shield className="w-8 h-8 text-gray-400" />
+        return <Shield className="w-8 h-8 text-muted-foreground" />
     }
   }
 
@@ -48,17 +48,17 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
 
   // Get confidence color
   const getConfidenceColor = (confidence: number | null) => {
-    if (confidence === null) return 'text-gray-500'
-    if (confidence >= 0.8) return 'text-green-600'
-    if (confidence >= 0.6) return 'text-yellow-600'
-    if (confidence >= 0.4) return 'text-orange-600'
-    return 'text-red-600'
+    if (confidence === null) return 'text-muted-foreground'
+    if (confidence >= 0.8) return 'text-success'
+    if (confidence >= 0.6) return 'text-warning'
+    if (confidence >= 0.4) return 'text-warning'
+    return 'text-danger'
   }
 
   return (
-    <GlassCard className="overflow-hidden" gradient="default">
+    <GlassCard className="overflow-hidden" >
       {/* Header with Risk Badge */}
-      <div className="p-6 border-b border-gray-200/50">
+      <div className="p-6 border-b border-border/50">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             <motion.div
@@ -70,8 +70,8 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
               {getShieldIcon(authenticityRisk)}
             </motion.div>
             <div>
-              <h3 className="text-xl font-bold text-gray-900">Authentication Status</h3>
-              <p className="text-sm text-gray-600 mt-1">
+              <h3 className="text-xl font-bold text-foreground">Authentication Status</h3>
+              <p className="text-sm text-muted-foreground mt-1">
                 Counterfeit risk assessment and verification guidance
               </p>
             </div>
@@ -89,16 +89,16 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
       </div>
 
       {/* Confidence Meters */}
-      <div className="p-6 grid md:grid-cols-2 gap-6 border-b border-gray-200/50">
+      <div className="p-6 grid md:grid-cols-2 gap-6 border-b border-border/50">
         {/* Authentication Confidence */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Authentication Confidence</span>
+            <span className="text-sm font-medium text-muted-foreground">Authentication Confidence</span>
             <span className={`text-lg font-bold ${getConfidenceColor(authenticationConfidence)}`}>
               {formatConfidence(authenticationConfidence)}
             </span>
           </div>
-          <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-3 bg-muted rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${(authenticationConfidence || 0) * 100}%` }}
@@ -110,7 +110,7 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
               }`}
             />
           </div>
-          <p className="text-xs text-gray-500 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {(authenticationConfidence || 0) >= 0.8 ? 'High confidence this is authentic' :
              (authenticationConfidence || 0) >= 0.6 ? 'Moderate confidence, verification recommended' :
              (authenticationConfidence || 0) >= 0.4 ? 'Low confidence, expert examination needed' :
@@ -121,28 +121,28 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
         {/* Quick Stats */}
         <div className="flex items-center justify-around">
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{criticalChecks}</div>
-            <div className="text-xs text-gray-500">Critical Checks</div>
+            <div className="text-2xl font-bold text-foreground">{criticalChecks}</div>
+            <div className="text-xs text-muted-foreground">Critical Checks</div>
           </div>
-          <div className="w-px h-10 bg-gray-200" />
+          <div className="w-px h-10 bg-border" />
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{totalChecks}</div>
-            <div className="text-xs text-gray-500">Total Checks</div>
+            <div className="text-2xl font-bold text-foreground">{totalChecks}</div>
+            <div className="text-xs text-muted-foreground">Total Checks</div>
           </div>
-          <div className="w-px h-10 bg-gray-200" />
+          <div className="w-px h-10 bg-border" />
           <div className="text-center">
-            <div className="text-2xl font-bold text-gray-900">{requiredPhotos}</div>
-            <div className="text-xs text-gray-500">Photos Needed</div>
+            <div className="text-2xl font-bold text-foreground">{requiredPhotos}</div>
+            <div className="text-xs text-muted-foreground">Photos Needed</div>
           </div>
         </div>
       </div>
 
       {/* Assessment Summary */}
       {authenticationAssessment && (
-        <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
+        <div className="p-6 border-b border-border/50 bg-gradient-to-r from-info-muted/50 to-accent/10">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <p className="text-gray-700 leading-relaxed">{authenticationAssessment}</p>
+            <AlertTriangle className="w-5 h-5 text-info flex-shrink-0 mt-0.5" />
+            <p className="text-muted-foreground leading-relaxed">{authenticationAssessment}</p>
           </div>
         </div>
       )}
@@ -168,8 +168,8 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
 
       {/* Known Fake Indicators */}
       {knownFakeIndicators && knownFakeIndicators.length > 0 && (
-        <div className="p-6 border-b border-gray-200/50">
-          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="p-6 border-b border-border/50">
+          <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <XCircle className="w-5 h-5 text-red-500" />
             Known Fake Indicators for This Item
           </h4>
@@ -182,8 +182,8 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
                 transition={{ delay: index * 0.05 }}
                 className="flex items-start gap-2 text-sm"
               >
-                <span className="w-1.5 h-1.5 bg-red-400 rounded-full mt-2 flex-shrink-0" />
-                <span className="text-gray-700">{indicator}</span>
+                <span className="w-1.5 h-1.5 bg-danger/60 rounded-full mt-2 flex-shrink-0" />
+                <span className="text-muted-foreground">{indicator}</span>
               </motion.div>
             ))}
           </div>
@@ -192,8 +192,8 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
 
       {/* Quick Checklist Preview */}
       {authenticationChecklist && authenticationChecklist.length > 0 && (
-        <div className="p-6 border-b border-gray-200/50">
-          <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <div className="p-6 border-b border-border/50">
+          <h4 className="font-semibold text-foreground mb-3 flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-green-500" />
             Authentication Checklist Preview
           </h4>
@@ -204,20 +204,20 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
-                className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50"
               >
                 <div className={`w-2 h-2 rounded-full ${
                   check.priority === 'critical' ? 'bg-red-500' :
                   check.priority === 'important' ? 'bg-amber-500' : 'bg-blue-500'
                 }`} />
-                <span className="text-sm text-gray-700 flex-1">{check.check}</span>
+                <span className="text-sm text-muted-foreground flex-1">{check.check}</span>
                 {check.photoHelpful && (
-                  <Camera className="w-4 h-4 text-gray-400" />
+                  <Camera className="w-4 h-4 text-muted-foreground" />
                 )}
               </motion.div>
             ))}
             {authenticationChecklist.length > 4 && (
-              <p className="text-sm text-gray-500 pl-5">
+              <p className="text-sm text-muted-foreground pl-5">
                 +{authenticationChecklist.length - 4} more checks available
               </p>
             )}
@@ -241,7 +241,7 @@ export default function AuthenticationSection({ analysis, onStartAuthentication 
             </span>
           )}
         </motion.button>
-        <p className="text-xs text-gray-500 text-center mt-2">
+        <p className="text-xs text-muted-foreground text-center mt-2">
           Complete the verification checklist and submit additional photos for deeper analysis
         </p>
       </div>

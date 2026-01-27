@@ -18,8 +18,8 @@ import {
   Lock,
   Sparkles
 } from 'lucide-react'
-import Header from '@/components/Header'
-import GlassCard from '@/components/ui/GlassCard'
+import PremiumHeader from '@/components/enhanced/PremiumHeader'
+import { GlassCard } from '@/components/ui/glass-card'
 import {
   PDFExportButton,
   CollectionAnalytics,
@@ -98,8 +98,8 @@ export default function PremiumFeatures() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 pb-28 md:pb-8">
-      <Header />
+    <div className="min-h-screen bg-background pb-28 md:pb-8">
+      <PremiumHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -109,21 +109,21 @@ export default function PremiumFeatures() {
               <Crown className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Premium Features</h1>
-              <p className="text-gray-600">Powerful tools for serious collectors</p>
+              <h1 className="text-3xl font-bold text-foreground">Premium Features</h1>
+              <p className="text-muted-foreground">Powerful tools for serious collectors</p>
             </div>
           </div>
 
           {!isPremium && (
-            <GlassCard className="p-6 mb-6" gradient="warm">
+            <GlassCard className="p-6 mb-6" variant="brass">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl flex items-center justify-center">
                     <Sparkles className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Unlock All Features</h2>
-                    <p className="text-gray-600">Get access to the complete premium toolkit</p>
+                    <h2 className="text-xl font-bold text-foreground">Unlock All Features</h2>
+                    <p className="text-muted-foreground">Get access to the complete premium toolkit</p>
                   </div>
                 </div>
                 <button
@@ -149,7 +149,7 @@ export default function PremiumFeatures() {
                 flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all
                 ${activeTab === feature.id
                   ? `bg-gradient-to-r ${feature.color} text-white shadow-lg`
-                  : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                  : 'bg-card text-muted-foreground hover:bg-muted border border-border'
                 }
               `}
             >
@@ -224,8 +224,8 @@ export default function PremiumFeatures() {
                     <FileText className="w-6 h-6 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-bold text-gray-900 mb-2">Professional PDF Reports</h3>
-                    <p className="text-gray-600 mb-4">
+                    <h3 className="text-lg font-bold text-foreground mb-2">Professional PDF Reports</h3>
+                    <p className="text-muted-foreground mb-4">
                       Generate detailed appraisal reports perfect for insurance documentation,
                       estate planning, or resale listings. Each report includes identification
                       details, valuation, authentication evidence, and professional formatting.
@@ -242,20 +242,20 @@ export default function PremiumFeatures() {
               {/* Report Features */}
               <div className="grid md:grid-cols-3 gap-4">
                 <GlassCard className="p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Insurance Ready</h4>
-                  <p className="text-sm text-gray-600">
+                  <h4 className="font-medium text-foreground mb-2">Insurance Ready</h4>
+                  <p className="text-sm text-muted-foreground">
                     Reports include all details insurers need: images, valuations, and provenance.
                   </p>
                 </GlassCard>
                 <GlassCard className="p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Professional Format</h4>
-                  <p className="text-sm text-gray-600">
+                  <h4 className="font-medium text-foreground mb-2">Professional Format</h4>
+                  <p className="text-sm text-muted-foreground">
                     Clean, branded PDF layout that looks professional when shared or printed.
                   </p>
                 </GlassCard>
                 <GlassCard className="p-4">
-                  <h4 className="font-medium text-gray-900 mb-2">Complete Records</h4>
-                  <p className="text-sm text-gray-600">
+                  <h4 className="font-medium text-foreground mb-2">Complete Records</h4>
+                  <p className="text-sm text-muted-foreground">
                     Includes analysis date, confidence scores, and authentication evidence.
                   </p>
                 </GlassCard>
@@ -272,12 +272,12 @@ export default function PremiumFeatures() {
             transition={{ delay: 0.3 }}
             className="mt-8"
           >
-            <GlassCard className="p-6 text-center" gradient="warm">
+            <GlassCard className="p-6 text-center" variant="brass">
               <Lock className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
+              <h3 className="text-xl font-bold text-foreground mb-2">
                 Unlock the Full VintageVision Experience
               </h3>
-              <p className="text-gray-600 mb-4 max-w-xl mx-auto">
+              <p className="text-muted-foreground mb-4 max-w-xl mx-auto">
                 Join collectors who use Pro features to make smarter decisions,
                 track their portfolios, and connect with experts.
               </p>

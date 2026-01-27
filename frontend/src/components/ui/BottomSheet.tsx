@@ -131,7 +131,7 @@ export default function BottomSheet({
             style={getHeightStyle()}
             className={cn(
               'fixed bottom-0 left-0 right-0 z-50',
-              'bg-white rounded-t-2xl',
+              'bg-card rounded-t-2xl',
               'shadow-2xl',
               'flex flex-col',
               'overflow-hidden',
@@ -147,14 +147,14 @@ export default function BottomSheet({
                 className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none"
                 onPointerDown={(e) => dragControls.start(e)}
               >
-                <div className="w-10 h-1 bg-gray-300 rounded-full" />
+                <div className="w-10 h-1 bg-border rounded-full" />
               </div>
             )}
 
             {/* Title */}
             {title && (
-              <div className="px-4 pb-3 border-b border-gray-100">
-                <h2 className="text-lg font-semibold text-gray-900 text-center">
+              <div className="px-4 pb-3 border-b border-border">
+                <h2 className="text-lg font-semibold text-foreground text-center">
                   {title}
                 </h2>
               </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, MousePointer } from 'lucide-react';
-import Glass from '@/components/ui/Glass';
+import { GlassCard } from '@/components/ui/glass-card';
 
 export function AccessibilityMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -188,12 +188,12 @@ export function AccessibilityMenu() {
             exit={{ opacity: 0, scale: 0.9, x: -20 }}
             className="mb-4"
           >
-            <Glass className="p-6 min-w-72 shadow-2xl" gradient="cool" blur="xl">
+            <GlassCard className="p-6 min-w-72 shadow-2xl">
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
                   <Eye className="w-5 h-5 text-white" />
                 </div>
-                <h3 className="font-bold text-blue-900 text-lg">Accessibility Options</h3>
+                <h3 className="font-bold text-foreground text-lg">Accessibility Options</h3>
               </div>
               
               <div className="space-y-4">
@@ -299,7 +299,7 @@ export function AccessibilityMenu() {
                   </motion.div>
                 </motion.button>
               </div>
-            </Glass>
+            </GlassCard>
           </motion.div>
         )}
       </AnimatePresence>

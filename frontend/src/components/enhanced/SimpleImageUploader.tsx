@@ -1,71 +1,64 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
-import { Camera, Upload, RotateCcw, Zap } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
+import { Camera, Upload, RotateCcw, Zap, Layers, Sparkles, Shield, CheckCircle2 } from 'lucide-react'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import { compressImage } from '@/lib/utils'
+import { GuidedCaptureFlow } from './GuidedCaptureFlow'
+import { CapturedImage } from '@/types'
+
+export type ConsensusMode = 'auto' | 'always' | 'never'
 
 interface SimpleImageUploaderProps {
-  onImageSelected: (dataUrl: string) => void
+  onImageSelected: (dataUrl: string, consensusMode?: ConsensusMode) => void
+  onMultiImageSelected?: (images: CapturedImage[], consensusMode?: ConsensusMode) => void
   disabled?: boolean
+  enableMultiImage?: boolean
 }
 
-export default function SimpleImageUploader({ onImageSelected, disabled }: SimpleImageUploaderProps) {
+export default function SimpleImageUploader({
+  onImageSelected,
+  onMultiImageSelected,
+  disabled,
+  enableMultiImage = true
+}: SimpleImageUploaderProps) {
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [compressing, setCompressing] = useState(false)
+  const [showGuidedCapture, setShowGuidedCapture] = useState(false)
+  const [highConfidenceMode, setHighConfidenceMode] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) {
-      console.log('No file selected')
-      return
-    }
+    if (!file) return
 
-    console.log('📸 File selected:', file.name, file.size, file.type)
     setCompressing(true)
 
     try {
-      // Compress image before creating data URL
-      console.log('🗜️ Compressing image...')
       const compressedBlob = await compressImage(file, 1920, 1080, 0.85)
-      console.log('✅ Compression complete:', {
-        originalSize: (file.size / 1024 / 1024).toFixed(2) + 'MB',
-        compressedSize: (compressedBlob.size / 1024 / 1024).toFixed(2) + 'MB',
-        reduction: (((file.size - compressedBlob.size) / file.size) * 100).toFixed(1) + '%'
-      })
 
-      // Convert compressed blob to data URL
       const reader = new FileReader()
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string
-        console.log('📊 Data URL created, length:', dataUrl.length)
         setSelectedImage(dataUrl)
         setShowPreview(true)
         setCompressing(false)
       }
       reader.onerror = () => {
-        console.error('Failed to read compressed image')
         alert('Failed to read compressed image')
         setCompressing(false)
       }
       reader.readAsDataURL(compressedBlob)
-    } catch (error) {
-      console.error('❌ Compression failed:', error)
-      // Fallback to original file if compression fails
-      console.log('⚠️ Using original file without compression')
+    } catch {
       const reader = new FileReader()
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string
-        console.log('Data URL created (uncompressed), length:', dataUrl.length)
         setSelectedImage(dataUrl)
         setShowPreview(true)
         setCompressing(false)
       }
       reader.onerror = () => {
-        console.error('Failed to read file')
         alert('Failed to read file')
         setCompressing(false)
       }
@@ -74,23 +67,45 @@ export default function SimpleImageUploader({ onImageSelected, disabled }: Simpl
   }
 
   const handleCameraClick = () => {
-    console.log('Camera button clicked')
     fileInputRef.current?.click()
   }
 
   const handleConfirm = () => {
-    console.log('Confirm clicked, image length:', selectedImage?.length)
     if (selectedImage) {
-      onImageSelected(selectedImage)
+      const consensusMode: ConsensusMode = highConfidenceMode ? 'always' : 'auto'
+      onImageSelected(selectedImage, consensusMode)
       setSelectedImage(null)
       setShowPreview(false)
+      setHighConfidenceMode(false)
     }
   }
 
   const handleRetake = () => {
-    console.log('Retake clicked')
     setSelectedImage(null)
     setShowPreview(false)
+  }
+
+  const handleGuidedCaptureComplete = (images: CapturedImage[]) => {
+    setShowGuidedCapture(false)
+    const consensusMode: ConsensusMode = highConfidenceMode ? 'always' : 'auto'
+
+    if (onMultiImageSelected) {
+      onMultiImageSelected(images, consensusMode)
+    } else if (images.length > 0) {
+      const overviewImage = images.find(img => img.role === 'overview') || images[0]
+      onImageSelected(overviewImage.dataUrl, consensusMode)
+    }
+    setHighConfidenceMode(false)
+  }
+
+  // Show guided capture flow
+  if (showGuidedCapture) {
+    return (
+      <GuidedCaptureFlow
+        onComplete={handleGuidedCaptureComplete}
+        onCancel={() => setShowGuidedCapture(false)}
+      />
+    )
   }
 
   if (compressing) {
@@ -100,11 +115,11 @@ export default function SimpleImageUploader({ onImageSelected, disabled }: Simpl
         animate={{ opacity: 1 }}
         className="max-w-3xl mx-auto"
       >
-        <GlassCard className="p-12">
+        <GlassCard variant="brass" className="p-12">
           <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-lg font-medium text-gray-700">Optimizing image...</p>
-            <p className="text-sm text-gray-500">Compressing for faster upload</p>
+            <div className="w-16 h-16 mx-auto border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-lg font-medium text-foreground">Optimizing image...</p>
+            <p className="text-sm text-muted-foreground">Compressing for faster upload</p>
           </div>
         </GlassCard>
       </motion.div>
@@ -118,22 +133,64 @@ export default function SimpleImageUploader({ onImageSelected, disabled }: Simpl
         animate={{ opacity: 1 }}
         className="max-w-3xl mx-auto"
       >
-        <GlassCard className="p-8">
-          <h3 className="text-2xl font-bold text-center mb-6">Ready to analyze?</h3>
+        <GlassCard variant="brass" className="p-4 sm:p-8">
+          <h3 className="text-xl sm:text-2xl font-display font-bold text-center mb-4 sm:mb-6 text-foreground">
+            Ready to analyze?
+          </h3>
           <img
             src={selectedImage}
             alt="Preview"
-            className="max-w-full max-h-96 mx-auto rounded-xl shadow-lg mb-6"
+            className="max-w-full max-h-64 sm:max-h-96 mx-auto rounded-xl shadow-lg mb-4 sm:mb-6 border border-border"
           />
-          <div className="flex gap-4 justify-center">
-            <MagneticButton onClick={handleRetake} variant="secondary">
-              <RotateCcw className="w-4 h-4" />
+
+          {/* High Confidence Mode Toggle */}
+          <div className="mb-6 max-w-md mx-auto">
+            <button
+              onClick={() => setHighConfidenceMode(!highConfidenceMode)}
+              className={`w-full p-3 rounded-xl border-2 transition-all ${
+                highConfidenceMode
+                  ? 'bg-primary/20 border-primary shadow-md'
+                  : 'bg-card border-border hover:border-muted-foreground'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                  highConfidenceMode ? 'bg-primary' : 'bg-muted'
+                }`}>
+                  {highConfidenceMode ? (
+                    <CheckCircle2 className="w-5 h-5 text-primary-foreground" />
+                  ) : (
+                    <Shield className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="text-left flex-1">
+                  <div className="font-semibold text-foreground">High Confidence Mode</div>
+                  <p className="text-xs text-muted-foreground">
+                    {highConfidenceMode
+                      ? 'Multiple AI passes will verify the analysis'
+                      : 'Enable for valuable or uncertain items'}
+                  </p>
+                </div>
+                <div className={`w-12 h-6 rounded-full transition-colors ${
+                  highConfidenceMode ? 'bg-primary' : 'bg-muted'
+                }`}>
+                  <div className={`w-5 h-5 rounded-full bg-foreground shadow-md transform transition-transform mt-0.5 ${
+                    highConfidenceMode ? 'translate-x-6' : 'translate-x-0.5'
+                  }`} />
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+            <Button onClick={handleRetake} variant="outline" size="lg">
+              <RotateCcw className="w-4 h-4 mr-2" />
               Retake
-            </MagneticButton>
-            <LiquidButton onClick={handleConfirm} variant="primary">
-              <Zap className="w-4 h-4" />
-              Analyze Now
-            </LiquidButton>
+            </Button>
+            <Button onClick={handleConfirm} variant="brass" size="lg">
+              <Zap className="w-4 h-4 mr-2" />
+              {highConfidenceMode ? 'Analyze (High Confidence)' : 'Analyze Now'}
+            </Button>
           </div>
         </GlassCard>
       </motion.div>
@@ -146,40 +203,84 @@ export default function SimpleImageUploader({ onImageSelected, disabled }: Simpl
       animate={{ opacity: 1 }}
       className="max-w-3xl mx-auto"
     >
-      <GlassCard className="p-12">
-        <div className="text-center space-y-6">
-          <div className="w-24 h-24 mx-auto bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center">
-            <Camera className="w-12 h-12 text-white" />
+      <GlassCard variant="brass" className="p-6 sm:p-12">
+        <div className="text-center space-y-4 sm:space-y-6">
+          <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto bg-gradient-to-br from-primary via-brass-light to-primary rounded-2xl flex items-center justify-center shadow-lg">
+            <Camera className="w-8 h-8 sm:w-12 sm:h-12 text-primary-foreground" />
           </div>
 
-          <h3 className="text-3xl font-bold">
-            Discover Your Treasure's <span className="text-amber-500">Story</span>
+          <h3 className="text-2xl sm:text-3xl font-display font-bold text-foreground">
+            Discover Your Treasure's <span className="text-primary">Story</span>
           </h3>
 
-          <p className="text-gray-600 text-lg max-w-md mx-auto">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-md mx-auto">
             Take a photo or upload an image of your vintage item
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
-            <MagneticButton
-              onClick={handleCameraClick}
-              disabled={disabled}
-              variant="primary"
-              size="lg"
+          {/* Multi-image option - World Class Analysis */}
+          {enableMultiImage && onMultiImageSelected && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6"
             >
-              <Camera className="w-5 h-5" />
-              Camera
-            </MagneticButton>
+              <button
+                onClick={() => setShowGuidedCapture(true)}
+                disabled={disabled}
+                className="w-full max-w-md mx-auto p-4 bg-primary/10 border-2 border-primary/40 rounded-2xl hover:border-primary hover:bg-primary/20 hover:shadow-lg transition-all group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-primary to-brass-light rounded-xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Sparkles className="w-6 h-6 text-primary-foreground" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-foreground">World-Class Analysis</span>
+                      <span className="text-xs px-2 py-0.5 bg-primary text-primary-foreground rounded-full">Recommended</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      Guided multi-photo capture for expert-level identification
+                    </p>
+                  </div>
+                  <Layers className="w-5 h-5 text-primary" />
+                </div>
+              </button>
+            </motion.div>
+          )}
 
-            <MagneticButton
-              onClick={() => fileInputRef.current?.click()}
-              disabled={disabled}
-              variant="glass"
-              size="lg"
-            >
-              <Upload className="w-5 h-5" />
-              Browse
-            </MagneticButton>
+          <div className="relative">
+            {enableMultiImage && onMultiImageSelected && (
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-sm text-muted-foreground">or quick single photo</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md mx-auto">
+              <Button
+                onClick={handleCameraClick}
+                disabled={disabled}
+                variant="brass"
+                size="lg"
+                className="w-full"
+              >
+                <Camera className="w-5 h-5 mr-2" />
+                Camera
+              </Button>
+
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={disabled}
+                variant="outline"
+                size="lg"
+                className="w-full"
+              >
+                <Upload className="w-5 h-5 mr-2" />
+                Browse
+              </Button>
+            </div>
           </div>
 
           <input

@@ -5,7 +5,7 @@ import {
   Shield, ShieldCheck, ShieldAlert, Camera, CheckCircle2, XCircle,
   ChevronRight, ChevronLeft, AlertTriangle, FileText, Upload, X, Loader2
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import {
   ItemAnalysis,
   PhotoRequest,
@@ -46,8 +46,7 @@ export default function AuthenticationWizard({
     additionalPhotosRequested,
     expertReferralRecommended,
     authenticationAssessment,
-    name,
-    maker
+    name
   } = analysis
 
   // Calculate progress
@@ -173,50 +172,50 @@ export default function AuthenticationWizard({
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
-        className="w-full max-w-4xl max-h-[90vh] overflow-hidden"
+        className="w-full max-w-4xl max-h-[85vh] sm:max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <GlassCard className="overflow-hidden" gradient="default">
+        <GlassCard className="overflow-hidden" >
           {/* Header */}
-          <div className="p-6 border-b border-gray-200/50 bg-gradient-to-r from-blue-50 to-purple-50">
+          <div className="p-4 sm:p-6 border-b border-border/50 bg-gradient-to-r from-blue-50 to-purple-50">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white rounded-xl shadow-sm" aria-hidden="true">
-                  <Shield className="w-6 h-6 text-blue-600" />
+              <div className="flex items-center gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-white rounded-xl shadow-sm" aria-hidden="true">
+                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div>
-                  <h2 id="auth-wizard-title" className="text-xl font-bold text-gray-900">Authentication Wizard</h2>
-                  <p className="text-sm text-gray-600">{name} {maker ? `by ${maker}` : ''}</p>
+                  <h2 id="auth-wizard-title" className="text-base sm:text-xl font-bold text-foreground">Authentication</h2>
+                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">{name}</p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
                 aria-label="Close authentication wizard"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
-            {/* Step Progress */}
-            <div className="flex items-center justify-between mt-6">
+            {/* Step Progress - Mobile optimized */}
+            <div className="flex items-center justify-between mt-4 sm:mt-6 overflow-x-auto">
               {steps.map((step, index) => (
-                <div key={step.id} className="flex items-center">
+                <div key={step.id} className="flex items-center flex-shrink-0">
                   <button
                     onClick={() => setCurrentStep(step.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                       currentStep === step.id
                         ? 'bg-blue-600 text-white'
                         : index < currentStepIndex
                         ? 'bg-green-100 text-green-700'
-                        : 'bg-gray-100 text-gray-500'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                   >
-                    <step.icon className="w-4 h-4" />
-                    <span className="text-sm font-medium hidden sm:inline">{step.label}</span>
+                    <step.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="font-medium">{step.label}</span>
                   </button>
                   {index < steps.length - 1 && (
-                    <ChevronRight className="w-4 h-4 text-gray-300 mx-2" />
+                    <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 text-muted-foreground mx-1 sm:mx-2 flex-shrink-0" />
                   )}
                 </div>
               ))}
@@ -224,7 +223,7 @@ export default function AuthenticationWizard({
           </div>
 
           {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[calc(90vh-250px)]">
+          <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(85vh-200px)] sm:max-h-[calc(90vh-250px)]">
             <AnimatePresence mode="wait">
               {currentStep === 'overview' && (
                 <motion.div
@@ -235,7 +234,7 @@ export default function AuthenticationWizard({
                   className="space-y-6"
                 >
                   {/* Risk Level */}
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                  <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
                     <div className="flex items-center gap-3">
                       {authenticityRisk === 'low' ? (
                         <ShieldCheck className="w-8 h-8 text-green-500" />
@@ -245,17 +244,17 @@ export default function AuthenticationWizard({
                         <Shield className="w-8 h-8 text-amber-500" />
                       )}
                       <div>
-                        <div className="font-semibold text-gray-900">Counterfeit Risk Level</div>
+                        <div className="font-semibold text-foreground">Counterfeit Risk Level</div>
                         <div className={`text-sm ${getAuthenticityRiskColor(authenticityRisk).split(' ')[0]}`}>
                           {getAuthenticityRiskLabel(authenticityRisk)}
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold text-gray-900">
+                      <div className="text-2xl font-bold text-foreground">
                         {formatConfidence(authenticationConfidence)}
                       </div>
-                      <div className="text-xs text-gray-500">Auth Confidence</div>
+                      <div className="text-xs text-muted-foreground">Auth Confidence</div>
                     </div>
                   </div>
 
@@ -264,7 +263,7 @@ export default function AuthenticationWizard({
                     <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
                       <div className="flex items-start gap-3">
                         <AlertTriangle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                        <p className="text-gray-700">{authenticationAssessment}</p>
+                        <p className="text-muted-foreground">{authenticationAssessment}</p>
                       </div>
                     </div>
                   )}
@@ -272,7 +271,7 @@ export default function AuthenticationWizard({
                   {/* Known Fake Indicators */}
                   {knownFakeIndicators && knownFakeIndicators.length > 0 && (
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
                         <XCircle className="w-5 h-5 text-red-500" />
                         What Fakes of This Item Show
                       </h3>
@@ -280,7 +279,7 @@ export default function AuthenticationWizard({
                         {knownFakeIndicators.map((indicator, index) => (
                           <div key={index} className="flex items-start gap-2 p-3 bg-red-50 border border-red-100 rounded-lg">
                             <span className="w-1.5 h-1.5 bg-red-400 rounded-full mt-2 flex-shrink-0" />
-                            <span className="text-sm text-gray-700">{indicator}</span>
+                            <span className="text-sm text-muted-foreground">{indicator}</span>
                           </div>
                         ))}
                       </div>
@@ -310,10 +309,10 @@ export default function AuthenticationWizard({
                   {/* Progress Bar */}
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Checklist Progress</span>
-                      <span className="text-sm font-bold text-gray-900">{checklistProgress}%</span>
+                      <span className="text-sm font-medium text-muted-foreground">Checklist Progress</span>
+                      <span className="text-sm font-bold text-foreground">{checklistProgress}%</span>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${checklistProgress}%` }}
@@ -336,7 +335,7 @@ export default function AuthenticationWizard({
                             : checklistState[check.id]?.result === 'fail'
                             ? 'bg-red-50 border-red-200'
                             : 'bg-yellow-50 border-yellow-200'
-                          : 'bg-white border-gray-200'
+                          : 'bg-white border-border'
                       }`}
                     >
                       <div className="flex items-start justify-between gap-4">
@@ -345,13 +344,13 @@ export default function AuthenticationWizard({
                             <span className={`px-2 py-0.5 rounded text-xs font-medium ${getCheckPriorityColor(check.priority)}`}>
                               {check.priority}
                             </span>
-                            <span className="text-xs text-gray-500 capitalize">{check.category}</span>
+                            <span className="text-xs text-muted-foreground capitalize">{check.category}</span>
                             {check.photoHelpful && (
-                              <Camera className="w-3 h-3 text-gray-400" />
+                              <Camera className="w-3 h-3 text-muted-foreground" />
                             )}
                           </div>
-                          <h4 className="font-semibold text-gray-900 mb-1">{check.check}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{check.howTo}</p>
+                          <h4 className="font-semibold text-foreground mb-1">{check.check}</h4>
+                          <p className="text-sm text-muted-foreground mb-2">{check.howTo}</p>
 
                           <div className="grid md:grid-cols-2 gap-3 text-sm">
                             <div className="p-2 bg-green-50 rounded-lg">
@@ -418,19 +417,19 @@ export default function AuthenticationWizard({
                 >
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Photos Submitted</span>
-                      <span className="text-sm font-bold text-gray-900">
+                      <span className="text-sm font-medium text-muted-foreground">Photos Submitted</span>
+                      <span className="text-sm font-bold text-foreground">
                         {submittedPhotos} / {totalPhotoRequests}
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: totalPhotoRequests > 0 ? `${(submittedPhotos / totalPhotoRequests) * 100}%` : '0%' }}
                         className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"
                       />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       {requiredPhotos} required photos, {totalPhotoRequests - requiredPhotos} recommended
                     </p>
                   </div>
@@ -460,9 +459,9 @@ export default function AuthenticationWizard({
                           )}
                         </div>
 
-                        <h4 className="font-semibold text-gray-900 mb-1 capitalize">{photo.area}</h4>
-                        <p className="text-sm text-gray-600 mb-2">{photo.reason}</p>
-                        <p className="text-xs text-gray-500 mb-4">{photo.whatToCapture}</p>
+                        <h4 className="font-semibold text-foreground mb-1 capitalize">{photo.area}</h4>
+                        <p className="text-sm text-muted-foreground mb-2">{photo.reason}</p>
+                        <p className="text-xs text-muted-foreground mb-4">{photo.whatToCapture}</p>
 
                         {photoSubmissions[photo.id] ? (
                           <div className="relative">
@@ -485,7 +484,7 @@ export default function AuthenticationWizard({
                         ) : (
                           <button
                             onClick={() => handlePhotoCapture(photo.id)}
-                            className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center gap-2 text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors"
+                            className="w-full py-3 border-2 border-dashed border-border rounded-lg flex items-center justify-center gap-2 text-muted-foreground hover:border-blue-400 hover:text-blue-600 transition-colors"
                           >
                             <Upload className="w-5 h-5" />
                             <span className="text-sm font-medium">Upload Photo</span>
@@ -514,8 +513,8 @@ export default function AuthenticationWizard({
                     >
                       <ShieldCheck className="w-10 h-10 text-white" />
                     </motion.div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Authentication Complete</h3>
-                    <p className="text-gray-600">
+                    <h3 className="text-2xl font-bold text-foreground mb-2">Authentication Complete</h3>
+                    <p className="text-muted-foreground">
                       Review your authentication results below
                     </p>
                   </div>
@@ -579,32 +578,33 @@ export default function AuthenticationWizard({
           </div>
 
           {/* Footer Navigation */}
-          <div className="p-6 border-t border-gray-200/50 bg-gray-50/50 flex items-center justify-between">
+          <div className="p-3 sm:p-6 border-t border-border/50 bg-muted/50/50 flex items-center justify-between gap-2">
             <button
               onClick={goPrev}
               disabled={currentStepIndex === 0}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <ChevronLeft className="w-4 h-4" />
-              Previous
+              <span className="hidden sm:inline">Previous</span>
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               {currentStep === 'photos' && submittedPhotos > 0 && (
                 <button
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50"
+                  className="flex items-center gap-1 sm:gap-2 px-3 sm:px-6 py-2 text-sm bg-gradient-to-r from-green-500 to-emerald-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow disabled:opacity-50"
                 >
                   {isSubmitting ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Analyzing...
+                      <span className="hidden sm:inline">Analyzing...</span>
                     </>
                   ) : (
                     <>
                       <Upload className="w-4 h-4" />
-                      Submit for Analysis
+                      <span className="hidden sm:inline">Submit for Analysis</span>
+                      <span className="sm:hidden">Submit</span>
                     </>
                   )}
                 </button>
@@ -613,9 +613,9 @@ export default function AuthenticationWizard({
               {currentStep !== 'report' && (
                 <button
                   onClick={goNext}
-                  className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+                  className="flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow"
                 >
-                  {currentStep === 'photos' ? 'View Report' : 'Next'}
+                  {currentStep === 'photos' ? 'Report' : 'Next'}
                   <ChevronRight className="w-4 h-4" />
                 </button>
               )}
@@ -623,7 +623,7 @@ export default function AuthenticationWizard({
               {currentStep === 'report' && (
                 <button
                   onClick={onClose}
-                  className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow"
+                  className="flex items-center gap-1 sm:gap-2 px-4 sm:px-6 py-2 text-sm bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-shadow"
                 >
                   Done
                   <CheckCircle2 className="w-4 h-4" />

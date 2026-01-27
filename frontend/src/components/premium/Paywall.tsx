@@ -24,7 +24,7 @@ import {
   Star,
   Gift
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
+import { GlassCard } from '@/components/ui/glass-card'
 import { cn } from '@/lib/utils'
 import { SubscriptionTier, TIER_NAMES, TIER_PRICING } from '@/types'
 
@@ -144,7 +144,7 @@ export default function Paywall({
     >
       {/* Blur overlay for hard variant */}
       {variant === 'hard' && !isModal && children && (
-        <div className="absolute inset-0 backdrop-blur-md bg-white/60 rounded-2xl" />
+        <div className="absolute inset-0 backdrop-blur-md bg-background/80 rounded-2xl" />
       )}
 
       <GlassCard
@@ -153,7 +153,7 @@ export default function Paywall({
           variant === 'soft' ? 'p-6' : 'p-8',
           variant === 'hard' && !isModal && 'absolute inset-4 m-auto max-h-fit',
         )}
-        gradient={variant === 'hard' ? 'warm' : 'purple'}
+        variant={variant === 'hard' ? 'brass' : 'default'}
       >
         {/* Decorative gradient */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-amber-400/20 via-orange-400/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
@@ -162,9 +162,9 @@ export default function Paywall({
         {isModal && onClose && (
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors z-10"
+            className="absolute top-4 right-4 p-2 rounded-full hover:bg-muted transition-colors z-10"
           >
-            <X className="w-5 h-5 text-gray-600" />
+            <X className="w-5 h-5 text-muted-foreground" />
           </button>
         )}
 
@@ -184,10 +184,10 @@ export default function Paywall({
           </div>
 
           {/* Title & Description */}
-          <h3 className="text-2xl font-bold text-gray-900 text-center mb-2">
+          <h3 className="text-2xl font-bold text-foreground text-center mb-2">
             {title || defaultTitle}
           </h3>
-          <p className="text-gray-600 text-center mb-6 max-w-md mx-auto">
+          <p className="text-muted-foreground text-center mb-6 max-w-md mx-auto">
             {description || defaultDescription}
           </p>
 
@@ -203,13 +203,13 @@ export default function Paywall({
               >
                 <div className={cn(
                   'p-2 rounded-lg flex-shrink-0',
-                  variant === 'hard' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'
+                  variant === 'hard' ? 'bg-warning-muted text-warning' : 'bg-accent/10 text-accent'
                 )}>
                   {feature.icon}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">{feature.title}</p>
-                  <p className="text-sm text-gray-600">{feature.description}</p>
+                  <p className="font-medium text-foreground">{feature.title}</p>
+                  <p className="text-sm text-muted-foreground">{feature.description}</p>
                 </div>
               </motion.div>
             ))}
@@ -217,14 +217,14 @@ export default function Paywall({
 
           {/* Pricing Badge */}
           <div className="text-center mb-6">
-            <div className="inline-flex items-baseline gap-1 bg-white/50 rounded-full px-4 py-2">
-              <span className="text-3xl font-bold text-gray-900">
+            <div className="inline-flex items-baseline gap-1 bg-card/50 rounded-full px-4 py-2">
+              <span className="text-3xl font-bold text-foreground">
                 ${tierPrice.monthly}
               </span>
-              <span className="text-gray-600">/month</span>
+              <span className="text-muted-foreground">/month</span>
             </div>
             {tierPrice.annual > 0 && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 or ${tierPrice.annual}/year (save {Math.round((1 - tierPrice.annual / (tierPrice.monthly * 12)) * 100)}%)
               </p>
             )}
@@ -257,14 +257,14 @@ export default function Paywall({
           {variant === 'soft' && onClose && (
             <button
               onClick={onClose}
-              className="w-full mt-3 py-2 text-gray-600 hover:text-gray-900 transition-colors text-sm"
+              className="w-full mt-3 py-2 text-muted-foreground hover:text-foreground transition-colors text-sm"
             >
               Maybe later
             </button>
           )}
 
           {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 mt-6 text-xs text-gray-500">
+          <div className="flex items-center justify-center gap-4 mt-6 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Shield className="w-3 h-3" />
               Cancel anytime
@@ -353,15 +353,15 @@ export function PaywallBanner({
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         'flex items-center justify-between gap-4 p-4 rounded-xl',
-        'bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200',
+        'bg-gradient-to-r from-warning-muted to-warning-muted/50 border border-warning/30',
         className
       )}
     >
       <div className="flex items-center gap-3">
-        <div className="p-2 bg-amber-100 rounded-lg">
-          <Crown className="w-5 h-5 text-amber-600" />
+        <div className="p-2 bg-warning-muted rounded-lg">
+          <Crown className="w-5 h-5 text-warning" />
         </div>
-        <p className="text-sm text-gray-700">{message}</p>
+        <p className="text-sm text-foreground">{message}</p>
       </div>
       <button
         onClick={handleClick}
@@ -405,7 +405,7 @@ export function CollectionLimitIndicator({
 
   if (isUnlimited) {
     return (
-      <div className={cn('flex items-center gap-2 text-sm text-gray-500', className)}>
+      <div className={cn('flex items-center gap-2 text-sm text-muted-foreground', className)}>
         <InfinityIcon className="w-4 h-4" />
         <span>Unlimited collection</span>
       </div>
@@ -417,14 +417,14 @@ export function CollectionLimitIndicator({
       <div className="flex items-center justify-between text-sm">
         <span className={cn(
           'font-medium',
-          isFull ? 'text-red-600' : isNearLimit ? 'text-amber-600' : 'text-gray-700'
+          isFull ? 'text-danger' : isNearLimit ? 'text-warning' : 'text-foreground'
         )}>
           {currentCount} / {maxCount} items
         </span>
         {(tier === 'free' || !tier) && (
           <button
             onClick={handleClick}
-            className="text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+            className="text-accent hover:text-accent/80 font-medium flex items-center gap-1"
           >
             <Crown className="w-3 h-3" />
             Upgrade
@@ -433,7 +433,7 @@ export function CollectionLimitIndicator({
       </div>
 
       {/* Progress bar */}
-      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-2 bg-muted rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(100, (currentCount / maxCount) * 100)}%` }}
@@ -441,21 +441,21 @@ export function CollectionLimitIndicator({
           className={cn(
             'h-full rounded-full',
             isFull
-              ? 'bg-red-500'
+              ? 'bg-danger'
               : isNearLimit
-                ? 'bg-amber-500'
-                : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                ? 'bg-warning'
+                : 'bg-gradient-to-r from-accent to-primary'
           )}
         />
       </div>
 
       {isFull && (
-        <p className="text-xs text-red-600">
+        <p className="text-xs text-danger">
           Collection full! Upgrade to add more items.
         </p>
       )}
       {isNearLimit && !isFull && (
-        <p className="text-xs text-amber-600">
+        <p className="text-xs text-warning">
           Almost full! Consider upgrading for unlimited storage.
         </p>
       )}

@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { RefreshCw, Home, MessageSquare } from 'lucide-react';
-import Glass from '@/components/ui/Glass';
+import { GlassCard } from '@/components/ui/glass-card';
 import FloatingButton from '@/components/ui/FloatingButton';
 
 interface Props {
@@ -74,25 +74,25 @@ export class ErrorBoundary extends Component<Props, State> {
             animate={{ opacity: 1, scale: 1 }}
             className="w-full max-w-md"
           >
-            <Glass className="p-8 text-center" gradient="default">
+            <GlassCard className="p-8 text-center">
               <div className="w-16 h-16 bg-gradient-to-br from-red-400 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-white text-2xl">⚠️</span>
               </div>
               
-              <h1 className="text-2xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl font-bold text-foreground mb-4">
                 Oops! Something went wrong
               </h1>
-              
-              <p className="text-gray-600 mb-6">
+
+              <p className="text-muted-foreground mb-6">
                 We encountered an unexpected error. Don't worry, this has been reported to our team.
               </p>
 
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="mb-6 text-left">
-                  <summary className="cursor-pointer text-sm text-gray-500 mb-2">
+                  <summary className="cursor-pointer text-sm text-muted-foreground mb-2">
                     Error Details (Development)
                   </summary>
-                  <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto max-h-32">
+                  <pre className="text-xs bg-muted p-2 rounded overflow-auto max-h-32 text-muted-foreground">
                     {this.state.error.stack}
                   </pre>
                 </details>
@@ -127,7 +127,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   </FloatingButton>
                 </div>
               </div>
-            </Glass>
+            </GlassCard>
           </motion.div>
         </div>
       );

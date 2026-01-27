@@ -9,8 +9,7 @@ import {
   Star,
   Command
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
+import { Button } from '@/components/ui/button'
 import UserMenu from '@/components/shared/UserMenu'
 import { useCommandPalette } from '@/components/ui/CommandPalette'
 import { cn, trackEvent, isStandalone } from '@/lib/utils'
@@ -30,7 +29,7 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20)
     }
-    
+
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -74,8 +73,8 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
       <motion.header
         className={cn(
           'sticky top-0 z-50 transition-all duration-500',
-          scrolled || isStandalone() 
-            ? 'py-2' 
+          scrolled || isStandalone()
+            ? 'py-2'
             : 'py-4'
         )}
         initial={{ y: -100 }}
@@ -83,13 +82,12 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GlassCard
+          {/* Glass header card */}
+          <div
             className={cn(
-              'transition-all duration-500 !overflow-visible',
+              'glass-brass rounded-lg transition-all duration-500',
               scrolled ? 'py-3 px-4' : 'py-4 px-6'
             )}
-            gradient="default"
-            blur="xl"
           >
             <div className="flex items-center justify-between">
               {/* Logo */}
@@ -99,16 +97,16 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <motion.div 
-                  className="relative w-10 h-10 bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg"
+                <motion.div
+                  className="relative w-10 h-10 bg-gradient-to-br from-primary via-brass-light to-primary rounded-lg flex items-center justify-center shadow-lg"
                   whileHover={{ rotate: 5 }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 >
-                  <Sparkles className="w-6 h-6 text-white drop-shadow-sm" />
-                  
+                  <Sparkles className="w-6 h-6 text-primary-foreground drop-shadow-sm" />
+
                   {/* Floating sparkle */}
                   <motion.div
-                    className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-300 rounded-full"
+                    className="absolute -top-1 -right-1 w-2 h-2 bg-brass-light rounded-full"
                     animate={{
                       scale: [1, 1.5, 1],
                       opacity: [1, 0.5, 1]
@@ -119,18 +117,18 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
                     }}
                   />
                 </motion.div>
-                
+
                 <div className="hidden sm:block">
-                  <motion.h1 
-                    className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent"
+                  <motion.h1
+                    className="text-xl font-display font-bold text-foreground"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.2 }}
                   >
                     VintageVision
                   </motion.h1>
-                  <motion.p 
-                    className="text-xs text-gray-600 group-hover:text-amber-600 transition-colors"
+                  <motion.p
+                    className="text-xs text-muted-foreground group-hover:text-primary transition-colors"
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.3 }}
@@ -144,9 +142,9 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
               <nav className="hidden lg:flex items-center gap-2">
                 {navigationItems.map((item, index) => {
                   if (item.requiresAuth && !user) return null
-                  
+
                   const isActive = isCurrentPath(item.path)
-                  
+
                   return (
                     <motion.button
                       key={item.id}
@@ -155,10 +153,10 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
                         trackEvent('nav_click', { item: item.id })
                       }}
                       className={cn(
-                        'flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-300',
+                        'flex items-center gap-2 px-4 py-2 rounded-md font-medium transition-all duration-300',
                         isActive
-                          ? 'bg-amber-100/70 text-amber-700 shadow-sm'
-                          : 'text-gray-600 hover:text-amber-600 hover:bg-amber-50/50'
+                          ? 'bg-primary/20 text-primary'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                       )}
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -171,16 +169,16 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
                     </motion.button>
                   )
                 })}
-                
+
                 {/* Command Palette Trigger */}
-                <MagneticButton
-                  onClick={toggleCommandPalette}
+                <Button
                   variant="ghost"
-                  size="sm"
-                  className="!p-2"
+                  size="icon-sm"
+                  onClick={toggleCommandPalette}
+                  className="text-muted-foreground"
                 >
                   <Command className="w-4 h-4" />
-                </MagneticButton>
+                </Button>
               </nav>
 
               {/* User Section */}
@@ -188,21 +186,21 @@ export default function PremiumHeader({ onReset }: PremiumHeaderProps) {
                 {user ? (
                   <UserMenu />
                 ) : (
-                  <MagneticButton
+                  <Button
+                    variant="brass"
+                    size="default"
                     onClick={() => {
                       redirectToLogin()
                       trackEvent('sign_in_click', { location: 'header' })
                     }}
-                    variant="primary"
-                    size="md"
                   >
-                    <Sparkles className="w-4 h-4" />
-                    <span>Sign In</span>
-                  </MagneticButton>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Sign In
+                  </Button>
                 )}
               </div>
             </div>
-          </GlassCard>
+          </div>
         </div>
       </motion.header>
 

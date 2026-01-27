@@ -5,38 +5,45 @@ import {
   MapPin,
   StickyNote,
   Sparkles,
-  Layers
+  Share2,
+  Download,
+  Bookmark,
+  ThumbsUp,
+  ThumbsDown,
+  FileDown,
+  ChevronRight,
+  Eye,
+  Camera,
+  Check,
+  MessageCircle,
+  Info
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import AnalysisTabs, { tabIcons } from '@/components/ui/AnalysisTabs'
+import { Button } from '@/components/ui/button'
+import { GlassCard } from '@/components/ui/glass-card'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Badge } from '@/components/ui/badge'
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
+import ConfidenceVisualization, { AuthenticationFindings } from '@/components/enhanced/ConfidenceVisualization'
 import AuthenticationWizard from '@/components/enhanced/AuthenticationWizard'
 import ShareAnalysisModal from '@/components/enhanced/ShareAnalysisModal'
 import { ExpertEscalation } from '@/components/enhanced/ExpertEscalation'
 import { useInteractiveSession } from '@/hooks/useInteractiveSession'
 import { exportAnalysisToPDF } from '@/utils/pdfExport'
-
-// Tab Content Components
-import {
-  OverviewTab,
-  EvidenceTab,
-  ValueTab,
-  StyleTab,
-  VeraTab
-} from '@/components/analysis'
-
 import {
   ItemAnalysis,
-  VisualMarker,
-  KnowledgeState,
-  ItemAuthentication,
   DomainExpert as DomainExpertType,
   PhotoRequest
 } from '@/types'
-import { cn, trackEvent, vibrate } from '@/lib/utils'
+import { cn, trackEvent, vibrate, formatCurrency } from '@/lib/utils'
 
 interface PremiumAnalysisResultProps {
   analysis: ItemAnalysis
@@ -44,6 +51,13 @@ interface PremiumAnalysisResultProps {
   onSubmitFeedback?: (isCorrect: boolean, correctionText?: string, feedbackType?: string) => void
 }
 
+/**
+ * Bento grid analysis result display.
+ * Shows everything at a glance - no tabs hiding information.
+ *
+ * Key principle: Most important info is always visible.
+ * Visual evidence, confidence state, and value are immediately apparent.
+ */
 export default function PremiumAnalysisResult({
   analysis,
   onSaveToCollection,
@@ -64,54 +78,60 @@ export default function PremiumAnalysisResult({
   const [showAuthWizard, setShowAuthWizard] = useState(false)
   const [showExpertEscalation, setShowExpertEscalation] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
-  const [activeView, setActiveView] = useState<'classic' | 'world-class'>('world-class')
-  const [showVeraAssistant, setShowVeraAssistant] = useState(false)
+  const [selectedMarker, setSelectedMarker] = useState<number | null>(null)
   const [updatedAnalysis, setUpdatedAnalysis] = useState<ItemAnalysis | null>(null)
 
   // Vera Interactive Session Hook
   const {
-    session: veraSession,
     loading: veraLoading,
     error: veraError,
     startSession: startVeraSession,
-    sendResponse: sendVeraResponse,
     triggerReanalysis: triggerVeraReanalysis,
     submitAdditionalPhotos,
-    clearSession: clearVeraSession,
   } = useInteractiveSession()
 
   // Use updated analysis if available (after Vera reanalysis)
   const displayAnalysis = updatedAnalysis || analysis
+  const confidencePercent = Math.round(displayAnalysis.confidence * 100)
 
   // Check if Vera should be offered
-  const shouldOfferVera = analysis.confidence < 0.9 ||
-    !!(analysis.additionalPhotosRequested && analysis.additionalPhotosRequested.length > 0)
+  const shouldOfferVera = displayAnalysis.confidence < 0.9 ||
+    !!(displayAnalysis.additionalPhotosRequested && displayAnalysis.additionalPhotosRequested.length > 0)
 
-  // Extract data from analysis
-  const visualMarkers: VisualMarker[] = (analysis as any).visualMarkers || []
-  const knowledgeState: KnowledgeState | null = (analysis as any).knowledgeState || null
-  const itemAuthentication: ItemAuthentication | null = (analysis as any).itemAuthentication || null
-  const hasWorldClassData = visualMarkers.length > 0 || knowledgeState !== null || itemAuthentication !== null
+  // Build knowledge state from analysis data
+  const knowledgeState = {
+    confirmed: displayAnalysis.evidenceFor || [],
+    probable: displayAnalysis.evidenceAgainst?.filter(e => !e.toLowerCase().includes('uncertain')) || [],
+    needsVerification: displayAnalysis.additionalPhotosRequested?.map(p => p.reason) || []
+  }
+
+  // Build authentication findings from the findings array
+  const authFindings = displayAnalysis.itemAuthentication?.findings?.map(finding => ({
+    name: finding.area,
+    result: finding.status === 'pass' ? 'pass' as const :
+            finding.status === 'fail' ? 'fail' as const : 'inconclusive' as const,
+    details: finding.explanation
+  })) || []
 
   useEffect(() => {
     trackEvent('analysis_result_viewed', {
-      itemName: analysis.name,
-      confidence: analysis.confidence,
-      domainExpert: analysis.domainExpert,
-      productCategory: analysis.productCategory,
-      hasDealRating: !!analysis.dealRating,
-      hasValue: !!(analysis.estimatedValueMin || analysis.estimatedValueMax)
+      itemName: displayAnalysis.name,
+      confidence: displayAnalysis.confidence,
+      domainExpert: displayAnalysis.domainExpert,
+      productCategory: displayAnalysis.productCategory,
+      hasDealRating: !!displayAnalysis.dealRating,
+      hasValue: !!(displayAnalysis.estimatedValueMin || displayAnalysis.estimatedValueMax)
     })
-  }, [analysis])
+  }, [displayAnalysis])
 
   // Handlers
   const handleShare = () => {
-    trackEvent('share_modal_opened', { itemName: analysis.name })
+    trackEvent('share_modal_opened', { itemName: displayAnalysis.name })
     setShowShareModal(true)
   }
 
   const handlePDFExport = () => {
-    trackEvent('pdf_export', { itemName: analysis.name })
+    trackEvent('pdf_export', { itemName: displayAnalysis.name })
     exportAnalysisToPDF(displayAnalysis)
     notifications.success('Opening PDF export...')
   }
@@ -128,7 +148,7 @@ export default function PremiumAnalysisResult({
     }
 
     setSaving(true)
-    trackEvent('collection_save_attempted', { itemName: analysis.name })
+    trackEvent('collection_save_attempted', { itemName: displayAnalysis.name })
 
     const success = await onSaveToCollection(saveNotes || undefined, saveLocation || undefined)
 
@@ -137,7 +157,7 @@ export default function PremiumAnalysisResult({
       setSaveNotes('')
       setSaveLocation('')
       vibrate([50, 50, 100])
-      notifications.premium(`Saved to your collection!`, `${analysis.name} is now in your personal collection`)
+      notifications.premium(`Saved to your collection!`, `${displayAnalysis.name} is now in your personal collection`)
     }
 
     setSaving(false)
@@ -153,10 +173,10 @@ export default function PremiumAnalysisResult({
       onSubmitFeedback?.(true, undefined, 'accuracy')
       vibrate(100)
       notifications.success('Thanks for the positive feedback!')
-      trackEvent('feedback_positive', { itemName: analysis.name })
+      trackEvent('feedback_positive', { itemName: displayAnalysis.name })
     } else {
       setShowFeedbackDialog(true)
-      trackEvent('feedback_negative_started', { itemName: analysis.name })
+      trackEvent('feedback_negative_started', { itemName: displayAnalysis.name })
     }
   }
 
@@ -167,39 +187,31 @@ export default function PremiumAnalysisResult({
     setSelectedFeedbackType('')
     notifications.success('Feedback submitted! Thank you for helping us improve.')
     trackEvent('feedback_negative_submitted', {
-      itemName: analysis.name,
+      itemName: displayAnalysis.name,
       feedbackType: selectedFeedbackType
     })
   }
 
   const handleDownload = () => {
     const link = document.createElement('a')
-    link.href = analysis.imageUrl
-    link.download = `${analysis.name}.jpg`
+    link.href = displayAnalysis.imageUrl
+    link.download = `${displayAnalysis.name}.jpg`
     link.click()
-    trackEvent('analysis_downloaded', { itemName: analysis.name })
+    trackEvent('analysis_downloaded', { itemName: displayAnalysis.name })
   }
 
   // Vera Handlers
   const handleStartVera = async () => {
-    trackEvent('vera_session_started', { itemName: analysis.name, confidence: analysis.confidence })
-    const session = await startVeraSession(analysis.id)
+    trackEvent('vera_session_started', { itemName: displayAnalysis.name, confidence: displayAnalysis.confidence })
+    const session = await startVeraSession(displayAnalysis.id)
     if (session) {
-      setShowVeraAssistant(true)
       notifications.info('Vera is ready to help improve your analysis!')
     } else if (veraError) {
       notifications.error('Failed to start Vera session', veraError)
     }
   }
 
-  const handleVeraSendMessage = async (needId: string, type: 'photo' | 'text', content: string) => {
-    const result = await sendVeraResponse(needId, type, content)
-    if (result) {
-      trackEvent('vera_response_sent', { needId, type })
-    }
-  }
-
-  const handleVeraReanalysis = async () => {
+  const handleVeraReanalysisCallback = async () => {
     notifications.info('Vera is reanalyzing with your new information...')
     const result = await triggerVeraReanalysis()
     if (result?.analysis) {
@@ -215,11 +227,14 @@ export default function PremiumAnalysisResult({
     }
   }
 
+  // Export for Vera integration
+  void handleVeraReanalysisCallback
+
   const handleSubmitPhotosFromWizard = async (photos: { photoRequest: PhotoRequest; imageData: string }[]) => {
     trackEvent('auth_wizard_photos_submitted', { count: photos.length })
     notifications.info(`Submitting ${photos.length} photos for analysis...`)
 
-    const result = await submitAdditionalPhotos(analysis.id, photos)
+    const result = await submitAdditionalPhotos(displayAnalysis.id, photos)
     if (result?.analysis) {
       setUpdatedAnalysis(result.analysis)
       notifications.premium(
@@ -231,318 +246,558 @@ export default function PremiumAnalysisResult({
     }
   }
 
-  // Build tabs configuration
-  const tabs = [
-    {
-      id: 'overview',
-      label: 'Overview',
-      icon: tabIcons.overview,
-      content: (
-        <OverviewTab
-          analysis={analysis}
-          displayAnalysis={displayAnalysis}
-          visualMarkers={visualMarkers}
-          activeView={activeView}
-          user={user}
-          onShowFullImage={() => setShowFullImage(true)}
-          onShowSaveDialog={() => setShowSaveDialog(true)}
-          onShare={handleShare}
-          onPDFExport={handlePDFExport}
-          onDownload={handleDownload}
-          onFeedback={handleFeedback}
-        />
-      )
-    },
-    {
-      id: 'evidence',
-      label: 'Evidence',
-      icon: tabIcons.evidence,
-      badge: (analysis.evidenceFor?.length || 0) + (analysis.evidenceAgainst?.length || 0) || undefined,
-      content: (
-        <EvidenceTab analysis={analysis} />
-      )
-    },
-    {
-      id: 'value',
-      label: 'Value',
-      icon: tabIcons.value,
-      content: (
-        <ValueTab
-          analysis={analysis}
-        />
-      )
-    },
-    {
-      id: 'style',
-      label: 'Style',
-      icon: tabIcons.style,
-      content: <StyleTab analysis={analysis} />
-    },
-    {
-      id: 'vera',
-      label: 'Vera',
-      icon: tabIcons.vera,
-      badge: shouldOfferVera ? '!' : undefined,
-      content: (
-        <VeraTab
-          analysis={analysis}
-          displayAnalysis={displayAnalysis}
-          shouldOfferVera={shouldOfferVera}
-          showVeraAssistant={showVeraAssistant}
-          veraSession={veraSession}
-          veraLoading={veraLoading}
-          onStartVera={handleStartVera}
-          onShowVeraAssistant={setShowVeraAssistant}
-          onVeraSendMessage={handleVeraSendMessage}
-          onVeraReanalysis={handleVeraReanalysis}
-          onClearVeraSession={clearVeraSession}
-          onShowExpertEscalation={() => setShowExpertEscalation(true)}
-        />
-      )
-    }
-  ]
+  // Format value range
+  const valueRange = displayAnalysis.estimatedValueMin && displayAnalysis.estimatedValueMax
+    ? `${formatCurrency(displayAnalysis.estimatedValueMin)} - ${formatCurrency(displayAnalysis.estimatedValueMax)}`
+    : displayAnalysis.estimatedValueMin
+      ? formatCurrency(displayAnalysis.estimatedValueMin)
+      : displayAnalysis.estimatedValueMax
+        ? formatCurrency(displayAnalysis.estimatedValueMax)
+        : null
+
+  // Visual markers from analysis (if available)
+  const visualMarkers = displayAnalysis.visualMarkers || []
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* View Toggle - Only show if world-class data available */}
-      {hasWorldClassData && (
+    <div className="space-y-6">
+      {/* Bento Grid - All key info visible at once */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+
+        {/* Large Image Card - spans 2 columns on lg */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex justify-center"
+          className="md:col-span-2 lg:col-span-2 lg:row-span-2"
         >
-          <div className="inline-flex bg-stone-100 rounded-full p-1">
-            <button
-              onClick={() => setActiveView('world-class')}
-              className={cn(
-                'px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2',
-                activeView === 'world-class'
-                  ? 'bg-amber-500 text-white shadow-md'
-                  : 'text-stone-600 hover:text-stone-800'
-              )}
+          <GlassCard variant="default" padding="none" className="overflow-hidden h-full">
+            <div
+              className="relative aspect-[4/3] lg:aspect-auto lg:h-full min-h-[300px] cursor-pointer group"
+              onClick={() => setShowFullImage(true)}
             >
-              <Sparkles className="w-4 h-4" />
-              World-Class View
-            </button>
-            <button
-              onClick={() => setActiveView('classic')}
-              className={cn(
-                'px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2',
-                activeView === 'classic'
-                  ? 'bg-stone-800 text-white shadow-md'
-                  : 'text-stone-600 hover:text-stone-800'
+              <img
+                src={displayAnalysis.imageUrl}
+                alt={displayAnalysis.name}
+                className="w-full h-full object-cover"
+              />
+
+              {/* Visual Evidence Markers */}
+              {visualMarkers.map((marker, index) => (
+                <motion.button
+                  key={index}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedMarker(selectedMarker === index ? null : index)
+                  }}
+                  className={cn(
+                    "absolute w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                    marker.confidence >= 0.8
+                      ? "bg-success/80 border-2 border-success"
+                      : marker.confidence >= 0.6
+                        ? "bg-warning/80 border-2 border-warning"
+                        : "bg-info/80 border-2 border-info",
+                    selectedMarker === index && "ring-2 ring-white ring-offset-2 ring-offset-black/50"
+                  )}
+                  style={{
+                    left: `${marker.bbox?.x || 20 + index * 15}%`,
+                    top: `${marker.bbox?.y || 20 + index * 20}%`
+                  }}
+                >
+                  {marker.confidence >= 0.8 ? (
+                    <Check className="w-4 h-4 text-white" />
+                  ) : marker.confidence >= 0.6 ? (
+                    <Eye className="w-4 h-4 text-white" />
+                  ) : (
+                    <Info className="w-4 h-4 text-white" />
+                  )}
+                </motion.button>
+              ))}
+
+              {/* Marker detail popup */}
+              <AnimatePresence>
+                {selectedMarker !== null && visualMarkers[selectedMarker] && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute bottom-4 left-4 right-4 p-3 rounded-lg bg-black/80 backdrop-blur-sm"
+                  >
+                    <p className="text-sm text-white font-medium">
+                      {visualMarkers[selectedMarker].label}: {visualMarkers[selectedMarker].finding}
+                    </p>
+                    <p className="text-xs text-white/70 mt-1">
+                      {Math.round(visualMarkers[selectedMarker].confidence * 100)}% confidence
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Domain Expert Badge */}
+              {displayAnalysis.domainExpert && (
+                <div className="absolute top-4 left-4">
+                  <Badge variant="brass" className="backdrop-blur-sm">
+                    {displayAnalysis.domainExpert}
+                  </Badge>
+                </div>
               )}
+
+              {/* View full image hint */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center pointer-events-none">
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  whileHover={{ opacity: 1 }}
+                  className="text-white flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Eye className="w-5 h-5" />
+                  <span className="text-sm font-medium">View full image</span>
+                </motion.div>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* Identification Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
+          <GlassCard variant="brass" className="h-full">
+            <div className="space-y-3">
+              <h2 className="font-display text-2xl font-bold text-foreground leading-tight">
+                {displayAnalysis.name}
+              </h2>
+
+              <div className="flex flex-wrap gap-2">
+                {displayAnalysis.productCategory && (
+                  <Badge variant="secondary">{displayAnalysis.productCategory}</Badge>
+                )}
+                {displayAnalysis.era && (
+                  <Badge variant="outline">{displayAnalysis.era}</Badge>
+                )}
+              </div>
+
+              <div className="space-y-2 pt-2">
+                {displayAnalysis.maker && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Maker</span>
+                    <span className="text-foreground font-medium">{displayAnalysis.maker}</span>
+                  </div>
+                )}
+                {displayAnalysis.originRegion && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Origin</span>
+                    <span className="text-foreground">{displayAnalysis.originRegion}</span>
+                  </div>
+                )}
+                {displayAnalysis.periodStart && displayAnalysis.periodEnd && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Period</span>
+                    <span className="text-foreground">{displayAnalysis.periodStart} - {displayAnalysis.periodEnd}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
+
+        {/* Value Card */}
+        {valueRange && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <GlassCard
+              variant="default"
+              className="h-full bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20"
             >
-              <Layers className="w-4 h-4" />
-              Classic View
-            </button>
-          </div>
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Estimated Value</p>
+                <p className="font-display text-3xl font-bold text-primary">
+                  {valueRange}
+                </p>
+
+                {displayAnalysis.dealRating && (
+                  <Badge
+                    variant={
+                      displayAnalysis.dealRating === 'exceptional' ? 'success' :
+                      displayAnalysis.dealRating === 'good' ? 'brass' : 'muted'
+                    }
+                  >
+                    {displayAnalysis.dealRating.charAt(0).toUpperCase() + displayAnalysis.dealRating.slice(1)} Deal
+                  </Badge>
+                )}
+
+                {displayAnalysis.comparableSales && displayAnalysis.comparableSales.length > 0 && (
+                  <div className="pt-2 border-t border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Recent sales</p>
+                    {displayAnalysis.comparableSales.slice(0, 2).map((sale, i) => (
+                      <div key={i} className="flex justify-between text-xs py-1">
+                        <span className="text-muted-foreground">{sale.venue || 'Private'}</span>
+                        <span className="text-primary font-medium">{formatCurrency(sale.price)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
+
+        {/* Confidence Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className={cn(!valueRange && "md:col-span-2 lg:col-span-1")}
+        >
+          <ConfidenceVisualization
+            confidence={confidencePercent}
+            knowledgeState={knowledgeState}
+            className="h-full"
+          />
+        </motion.div>
+
+        {/* Authentication Card (if has findings) */}
+        {authFindings.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <AuthenticationFindings
+              findings={authFindings}
+              className="h-full"
+            />
+          </motion.div>
+        )}
+
+        {/* Vera CTA Card (if should offer) */}
+        {shouldOfferVera && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <GlassCard variant="default" className="h-full">
+              <div className="flex flex-col h-full">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="w-5 h-5 text-accent" />
+                  </div>
+                  <div>
+                    <h4 className="font-medium text-foreground">Want more certainty?</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Vera can help with additional photos
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartVera}
+                    disabled={veraLoading}
+                    className="w-full"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {veraLoading ? 'Starting...' : 'Ask Vera'}
+                  </Button>
+                </div>
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Description Section */}
+      {displayAnalysis.description && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+        >
+          <GlassCard variant="default">
+            <h3 className="font-display text-lg font-semibold text-foreground mb-3">About This Item</h3>
+            <p className="text-muted-foreground leading-relaxed">
+              {displayAnalysis.description}
+            </p>
+            {displayAnalysis.historicalContext && (
+              <div className="mt-4 pt-4 border-t border-border">
+                <p className="text-sm text-muted-foreground">
+                  <span className="text-foreground font-medium">Historical context:</span>{' '}
+                  {displayAnalysis.historicalContext}
+                </p>
+              </div>
+            )}
+          </GlassCard>
         </motion.div>
       )}
 
-      {/* Tab-Based Layout */}
-      <AnalysisTabs
-        tabs={tabs}
-        defaultIndex={0}
-        stickyHeader={true}
-      />
+      {/* Action Bar - Sticky on mobile */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className="sticky bottom-4 z-10"
+      >
+        <GlassCard variant="default" className="backdrop-blur-xl">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            {/* Primary Actions */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="brass"
+                onClick={() => setShowSaveDialog(true)}
+              >
+                <Bookmark className="w-4 h-4 mr-2" />
+                Save
+              </Button>
+
+              <Button
+                variant="outline"
+                onClick={handleShare}
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handlePDFExport}
+              >
+                <FileDown className="w-5 h-5" />
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleDownload}
+              >
+                <Download className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Feedback */}
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground hidden sm:inline">Accurate?</span>
+              <div className="flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleFeedback(true)}
+                  className="text-muted-foreground hover:text-success"
+                >
+                  <ThumbsUp className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleFeedback(false)}
+                  className="text-muted-foreground hover:text-danger"
+                >
+                  <ThumbsDown className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </GlassCard>
+      </motion.div>
+
+      {/* Additional Photos Request - if Vera suggests */}
+      {displayAnalysis.additionalPhotosRequested && displayAnalysis.additionalPhotosRequested.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <GlassCard variant="default" className="border-info/20 bg-info-muted">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-info/20 flex items-center justify-center flex-shrink-0">
+                <Camera className="w-6 h-6 text-info" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-medium text-foreground mb-1">Additional photos would help</h4>
+                <p className="text-sm text-muted-foreground mb-4">
+                  These specific photos could improve confidence
+                </p>
+                <ul className="space-y-2">
+                  {displayAnalysis.additionalPhotosRequested.slice(0, 3).map((request, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm">
+                      <ChevronRight className="w-4 h-4 text-info mt-0.5 flex-shrink-0" />
+                      <span className="text-foreground">{request.reason}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAuthWizard(true)}
+                  className="mt-4"
+                >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Add Photos
+                </Button>
+              </div>
+            </div>
+          </GlassCard>
+        </motion.div>
+      )}
 
       {/* Full Image Modal */}
       <AnimatePresence>
         {showFullImage && (
           <motion.div
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setShowFullImage(false)}
           >
             <motion.div
-              className="relative max-w-4xl max-h-full"
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
+              className="relative max-w-5xl max-h-[90vh]"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
               <img
-                src={analysis.imageUrl}
-                alt={analysis.name}
-                className="w-full h-auto object-contain rounded-xl shadow-2xl"
+                src={displayAnalysis.imageUrl}
+                alt={displayAnalysis.name}
+                className="w-full h-full object-contain rounded-lg shadow-2xl"
               />
 
-              <motion.button
+              <Button
+                variant="secondary"
+                size="icon"
                 onClick={() => setShowFullImage(false)}
-                className="absolute top-4 right-4 w-12 h-12 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center text-white"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                className="absolute top-4 right-4"
               >
-                <X className="w-6 h-6" />
-              </motion.button>
+                <X className="w-5 h-5" />
+              </Button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Save Dialog */}
-      <AnimatePresence>
-        {showSaveDialog && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowSaveDialog(false)}
-          >
-            <motion.div
-              className="w-full max-w-md"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <GlassCard className="p-6" gradient="default">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Save to Collection</h3>
+      <Dialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Save to Collection</DialogTitle>
+            <DialogDescription>
+              Add this item to your personal collection with optional notes.
+            </DialogDescription>
+          </DialogHeader>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <StickyNote className="w-4 h-4 inline mr-2" />
-                      Notes (optional)
-                    </label>
-                    <textarea
-                      value={saveNotes}
-                      onChange={(e) => setSaveNotes(e.target.value)}
-                      placeholder="Add any personal notes about this item..."
-                      rows={3}
-                      className="w-full px-3 py-2 bg-white/50 border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-                    />
-                  </div>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <StickyNote className="w-4 h-4 text-muted-foreground" />
+                Notes (optional)
+              </label>
+              <textarea
+                value={saveNotes}
+                onChange={(e) => setSaveNotes(e.target.value)}
+                placeholder="Add any personal notes about this item..."
+                rows={3}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              />
+            </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <MapPin className="w-4 h-4 inline mr-2" />
-                      Location (optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={saveLocation}
-                      onChange={(e) => setSaveLocation(e.target.value)}
-                      placeholder="Where did you find this item?"
-                      className="w-full px-3 py-2 bg-white/50 border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-muted-foreground" />
+                Location (optional)
+              </label>
+              <Input
+                value={saveLocation}
+                onChange={(e) => setSaveLocation(e.target.value)}
+                placeholder="Where did you find this item?"
+              />
+            </div>
+          </div>
 
-                <div className="flex gap-3 mt-6">
-                  <LiquidButton
-                    onClick={handleSaveToCollection}
-                    disabled={saving}
-                    variant="primary"
-                    size="md"
-                    className="flex-1"
-                  >
-                    {saving ? 'Saving...' : 'Save'}
-                  </LiquidButton>
-
-                  <MagneticButton
-                    onClick={() => setShowSaveDialog(false)}
-                    variant="ghost"
-                    size="md"
-                  >
-                    Cancel
-                  </MagneticButton>
-                </div>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowSaveDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="brass" onClick={handleSaveToCollection} disabled={saving}>
+              {saving ? 'Saving...' : 'Save to Collection'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Feedback Dialog */}
-      <AnimatePresence>
-        {showFeedbackDialog && (
-          <motion.div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowFeedbackDialog(false)}
-          >
-            <motion.div
-              className="w-full max-w-md"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
+      <Dialog open={showFeedbackDialog} onOpenChange={setShowFeedbackDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Help Us Improve</DialogTitle>
+            <DialogDescription>
+              Your feedback helps train our AI to be more accurate.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                What type of feedback?
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'accuracy', label: 'Accuracy' },
+                  { value: 'styling', label: 'Styling' },
+                  { value: 'value', label: 'Value' }
+                ].map((type) => (
+                  <button
+                    key={type.value}
+                    onClick={() => setSelectedFeedbackType(type.value)}
+                    className={cn(
+                      'p-3 text-sm rounded-md border-2 transition-all',
+                      selectedFeedbackType === type.value
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:border-muted-foreground text-muted-foreground'
+                    )}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">
+                What would be more accurate?
+              </label>
+              <textarea
+                value={feedbackText}
+                onChange={(e) => setFeedbackText(e.target.value)}
+                placeholder="Please share the correct information..."
+                rows={4}
+                className="w-full px-3 py-2 bg-background border border-input rounded-md text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setShowFeedbackDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="brass"
+              onClick={submitDetailedFeedback}
+              disabled={!feedbackText.trim() || !selectedFeedbackType}
             >
-              <GlassCard className="p-6" gradient="default">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Help Us Improve</h3>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-3">
-                      What type of feedback?
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {[
-                        { value: 'accuracy', label: 'Accuracy' },
-                        { value: 'styling', label: 'Styling' },
-                        { value: 'value', label: 'Value' }
-                      ].map((type) => (
-                        <button
-                          key={type.value}
-                          onClick={() => setSelectedFeedbackType(type.value)}
-                          className={cn(
-                            'p-3 text-sm rounded-xl border-2 transition-all',
-                            selectedFeedbackType === type.value
-                              ? 'border-amber-500 bg-amber-50 text-amber-700'
-                              : 'border-gray-300 hover:border-gray-400'
-                          )}
-                        >
-                          {type.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      What would be more accurate?
-                    </label>
-                    <textarea
-                      value={feedbackText}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      placeholder="Please share the correct information..."
-                      rows={4}
-                      className="w-full px-3 py-2 bg-white/50 border border-gray-300/50 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent resize-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 mt-6">
-                  <LiquidButton
-                    onClick={submitDetailedFeedback}
-                    disabled={!feedbackText.trim() || !selectedFeedbackType}
-                    variant="primary"
-                    size="md"
-                    className="flex-1"
-                  >
-                    Submit Feedback
-                  </LiquidButton>
-
-                  <MagneticButton
-                    onClick={() => setShowFeedbackDialog(false)}
-                    variant="ghost"
-                    size="md"
-                  >
-                    Cancel
-                  </MagneticButton>
-                </div>
-              </GlassCard>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              Submit Feedback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Authentication Wizard Modal */}
       <AnimatePresence>
@@ -557,11 +812,11 @@ export default function PremiumAnalysisResult({
 
       {/* Expert Escalation Modal */}
       <AnimatePresence>
-        {showExpertEscalation && analysis.domainExpert && (
+        {showExpertEscalation && displayAnalysis.domainExpert && (
           <ExpertEscalation
-            itemName={analysis.name}
-            domainExpert={analysis.domainExpert as DomainExpertType}
-            estimatedValue={analysis.estimatedValueMin || analysis.estimatedValueMax || undefined}
+            itemName={displayAnalysis.name}
+            domainExpert={displayAnalysis.domainExpert as DomainExpertType}
+            estimatedValue={displayAnalysis.estimatedValueMin || displayAnalysis.estimatedValueMax || undefined}
             onClose={() => setShowExpertEscalation(false)}
           />
         )}

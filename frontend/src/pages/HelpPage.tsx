@@ -19,10 +19,8 @@ import {
   Smartphone,
   Globe
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import AnimatedBackground from '@/components/ui/AnimatedBackground'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 
 interface FAQItem {
   id: string
@@ -182,20 +180,18 @@ export default function HelpPage() {
   }
 
   return (
-    <div className="min-h-screen pb-28 md:pb-8">
-      <AnimatedBackground variant="cool" />
-
+    <div className="min-h-screen pb-28 md:pb-8 bg-background">
       {/* Header */}
       <div className="relative z-10 p-4">
-        <GlassCard className="p-4" blur="lg">
-          <MagneticButton
+        <GlassCard className="p-4">
+          <Button
             onClick={() => navigate('/')}
-            variant="ghost"
-            size="md"
+            variant="outline"
+            size="default"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
-          </MagneticButton>
+          </Button>
         </GlassCard>
       </div>
 
@@ -213,14 +209,14 @@ export default function HelpPage() {
               </div>
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
               Help{' '}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Center
               </span>
             </h1>
             
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed mb-8">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
               Find answers to your questions and learn how to get the most out of VintageVision
             </p>
 
@@ -228,13 +224,13 @@ export default function HelpPage() {
             <div className="max-w-2xl mx-auto">
               <GlassCard className="p-4">
                 <div className="relative">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Search for help articles, FAQs, and guides..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-transparent border-none outline-none text-gray-900 placeholder-gray-500 text-lg"
+                    className="w-full pl-12 pr-4 py-4 bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground text-lg"
                   />
                 </div>
               </GlassCard>
@@ -253,20 +249,20 @@ export default function HelpPage() {
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
             >
-              <GlassCard className="p-6 text-center h-full" hover>
+              <GlassCard className="p-6 text-center h-full" hover="scale">
                 <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <MessageSquare className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Contact Support</h3>
-                <p className="text-gray-600 mb-4">Get personalized help from our expert team</p>
-                <LiquidButton
+                <h3 className="text-lg font-bold text-foreground mb-2">Contact Support</h3>
+                <p className="text-muted-foreground mb-4">Get personalized help from our expert team</p>
+                <Button
                   onClick={() => navigate('/contact')}
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   className="w-full"
                 >
                   Contact Us
-                </LiquidButton>
+                </Button>
               </GlassCard>
             </motion.div>
 
@@ -276,20 +272,20 @@ export default function HelpPage() {
               transition={{ duration: 0.6, delay: 0.1 }}
               viewport={{ once: true }}
             >
-              <GlassCard className="p-6 text-center h-full" hover>
+              <GlassCard className="p-6 text-center h-full" hover="scale">
                 <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <PlayCircle className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Video Tutorials</h3>
-                <p className="text-gray-600 mb-4">Watch step-by-step guides and tutorials</p>
-                <LiquidButton
+                <h3 className="text-lg font-bold text-foreground mb-2">Video Tutorials</h3>
+                <p className="text-muted-foreground mb-4">Watch step-by-step guides and tutorials</p>
+                <Button
                   onClick={() => window.open('https://youtube.com/@vintagevision', '_blank')}
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   className="w-full"
                 >
                   Watch Videos
-                </LiquidButton>
+                </Button>
               </GlassCard>
             </motion.div>
 
@@ -299,20 +295,20 @@ export default function HelpPage() {
               transition={{ duration: 0.6, delay: 0.2 }}
               viewport={{ once: true }}
             >
-              <GlassCard className="p-6 text-center h-full" hover>
+              <GlassCard className="p-6 text-center h-full" hover="scale">
                 <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                   <Globe className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">Community Forum</h3>
-                <p className="text-gray-600 mb-4">Connect with other vintage enthusiasts</p>
-                <LiquidButton
+                <h3 className="text-lg font-bold text-foreground mb-2">Community Forum</h3>
+                <p className="text-muted-foreground mb-4">Connect with other vintage enthusiasts</p>
+                <Button
                   onClick={() => window.open('https://community.vintagevision.ai', '_blank')}
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   className="w-full"
                 >
                   Join Community
-                </LiquidButton>
+                </Button>
               </GlassCard>
             </motion.div>
           </div>
@@ -329,8 +325,8 @@ export default function HelpPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">User Guides</h2>
-            <p className="text-xl text-gray-600">Step-by-step guides to help you master VintageVision</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">User Guides</h2>
+            <p className="text-xl text-muted-foreground">Step-by-step guides to help you master VintageVision</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-8">
@@ -342,34 +338,34 @@ export default function HelpPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-8 h-full" hover>
+                <GlassCard className="p-8 h-full" hover="scale">
                   <div className="flex items-start gap-4 mb-6">
                     <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl flex items-center justify-center flex-shrink-0">
                       <guide.icon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{guide.title}</h3>
-                      <p className="text-gray-600">{guide.description}</p>
+                      <h3 className="text-xl font-bold text-foreground mb-2">{guide.title}</h3>
+                      <p className="text-muted-foreground">{guide.description}</p>
                     </div>
                   </div>
                   
                   <ul className="space-y-3 mb-6">
                     {guide.items.map((item, itemIndex) => (
-                      <li key={itemIndex} className="flex items-center gap-3 text-gray-700">
-                        <ChevronRight className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <li key={itemIndex} className="flex items-center gap-3 text-muted-foreground">
+                        <ChevronRight className="w-4 h-4 text-info flex-shrink-0" />
                         <span>{item}</span>
                       </li>
                     ))}
                   </ul>
                   
-                  <MagneticButton
+                  <Button
                     onClick={() => navigate(`/guides/${guide.id}`)}
-                    variant="glass"
-                    size="md"
+                    variant="outline"
+                    size="default"
                     className="w-full"
                   >
                     View Guide
-                  </MagneticButton>
+                  </Button>
                 </GlassCard>
               </motion.div>
             ))}
@@ -387,28 +383,28 @@ export default function HelpPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Frequently Asked Questions</h2>
-            <p className="text-xl text-gray-600">Quick answers to common questions</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Frequently Asked Questions</h2>
+            <p className="text-xl text-muted-foreground">Quick answers to common questions</p>
           </motion.div>
 
           {/* Category Filter */}
           <div className="flex flex-wrap gap-3 justify-center mb-12">
             {categories.map((category) => (
-              <MagneticButton
+              <Button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                variant={activeCategory === category.id ? "primary" : "ghost"}
+                variant={activeCategory === category.id ? "brass" : "outline"}
                 size="sm"
               >
-                <category.icon className="w-4 h-4" />
+                <category.icon className="w-4 h-4 mr-2" />
                 {category.label}
-              </MagneticButton>
+              </Button>
             ))}
           </div>
 
           {/* FAQ List */}
           <div className="max-w-4xl mx-auto">
-            <GlassCard className="divide-y divide-gray-200">
+            <GlassCard className="divide-y divide-border">
               {filteredFAQs.map((faq, index) => (
                 <motion.div
                   key={faq.id}
@@ -418,17 +414,17 @@ export default function HelpPage() {
                 >
                   <button
                     onClick={() => toggleFAQ(faq.id)}
-                    className="w-full p-6 text-left hover:bg-gray-50/50 transition-colors duration-300"
+                    className="w-full p-6 text-left hover:bg-muted/50 transition-colors duration-300"
                   >
                     <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900 pr-4">
+                      <h3 className="text-lg font-semibold text-foreground pr-4">
                         {faq.question}
                       </h3>
                       <motion.div
                         animate={{ rotate: expandedFAQ === faq.id ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                        <ChevronDown className="w-5 h-5 text-muted-foreground" />
                       </motion.div>
                     </div>
                   </button>
@@ -443,7 +439,7 @@ export default function HelpPage() {
                         className="overflow-hidden"
                       >
                         <div className="px-6 pb-6">
-                          <p className="text-gray-600 leading-relaxed">
+                          <p className="text-muted-foreground leading-relaxed">
                             {faq.answer}
                           </p>
                         </div>
@@ -460,37 +456,37 @@ export default function HelpPage() {
       {/* Still Need Help */}
       <div className="relative z-10 py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <GlassCard className="p-12" gradient="warm">
+          <GlassCard className="p-12" variant="brass">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                 Still Need Help?
               </h2>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-xl text-muted-foreground mb-8">
                 Can't find what you're looking for? Our support team is here to help you succeed.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <LiquidButton
+                <Button
                   onClick={() => navigate('/contact')}
-                  variant="primary"
+                  variant="brass"
                   size="lg"
                 >
-                  <MessageSquare className="w-5 h-5" />
+                  <MessageSquare className="w-5 h-5 mr-2" />
                   Contact Support
-                </LiquidButton>
-                
-                <MagneticButton
+                </Button>
+
+                <Button
                   onClick={() => window.open('mailto:support@vintagevision.ai', '_blank')}
-                  variant="glass"
+                  variant="outline"
                   size="lg"
                 >
                   Email Us Directly
-                </MagneticButton>
+                </Button>
               </div>
             </motion.div>
           </GlassCard>

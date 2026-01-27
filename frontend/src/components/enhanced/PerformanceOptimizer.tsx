@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Wifi, WifiOff, Zap } from 'lucide-react';
-import Glass from '@/components/ui/Glass';
+import { GlassCard } from '@/components/ui/glass-card';
 
 export function NetworkStatus() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -37,7 +37,7 @@ export function NetworkStatus() {
           exit={{ opacity: 0, y: 50 }}
           className="fixed bottom-4 left-4 z-50"
         >
-          <Glass className={`p-3 ${isOnline ? 'border-green-200' : 'border-red-200'}`}>
+          <GlassCard className={`p-3 ${isOnline ? 'border-green-200' : 'border-red-200'}`}>
             <div className="flex items-center gap-2">
               {isOnline ? (
                 <>
@@ -51,7 +51,7 @@ export function NetworkStatus() {
                 </>
               )}
             </div>
-          </Glass>
+          </GlassCard>
         </motion.div>
       )}
     </AnimatePresence>
@@ -97,12 +97,12 @@ export function PerformanceMonitor() {
 
   return (
     <div className="fixed top-4 right-4 z-50">
-      <Glass className="p-2 text-xs">
+      <GlassCard className="p-2 text-xs">
         <div className="flex items-center gap-2">
           <Zap className="w-3 h-3 text-amber-600" />
           <span>Perf: {Math.round(metrics.lcp)}ms</span>
         </div>
-      </Glass>
+      </GlassCard>
     </div>
   );
 }

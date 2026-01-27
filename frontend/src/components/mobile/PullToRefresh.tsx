@@ -53,7 +53,7 @@ export default function PullToRefresh({
       >
         <motion.div
           className={cn(
-            'flex flex-col items-center justify-center p-4 bg-white/90 backdrop-blur-sm rounded-b-2xl shadow-lg border border-gray-200/50',
+            'flex flex-col items-center justify-center p-4 bg-white/90 backdrop-blur-sm rounded-b-2xl shadow-lg border border-border/50',
             'transition-all duration-300'
           )}
           style={{
@@ -77,7 +77,7 @@ export default function PullToRefresh({
           )}
           
           <motion.p 
-            className="text-xs font-medium mt-1 text-gray-600"
+            className="text-xs font-medium mt-1 text-muted-foreground"
             animate={{
               color: refreshing 
                 ? '#10b981' 

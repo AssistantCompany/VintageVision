@@ -19,11 +19,8 @@ import {
   Lock,
   BarChart
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import AnimatedBackground from '@/components/ui/AnimatedBackground'
-import SpotlightEffect from '@/components/ui/SpotlightEffect'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 
 export default function FeaturesPage() {
   const navigate = useNavigate()
@@ -167,30 +164,28 @@ export default function FeaturesPage() {
   ]
 
   return (
-    <div className="min-h-screen pb-28 md:pb-8">
-      <AnimatedBackground variant="default" />
-
+    <div className="min-h-screen pb-28 md:pb-8 bg-background">
       {/* Header */}
       <div className="relative z-10 p-4">
-        <GlassCard className="p-4" blur="lg">
+        <GlassCard className="p-4">
           <div className="flex items-center justify-between">
-            <MagneticButton
+            <Button
               onClick={() => navigate('/')}
-              variant="ghost"
-              size="md"
+              variant="outline"
+              size="default"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Home
-            </MagneticButton>
-            
-            <LiquidButton
+            </Button>
+
+            <Button
               onClick={() => navigate('/pricing')}
-              variant="primary"
+              variant="brass"
               size="sm"
             >
-              <Crown className="w-4 h-4" />
+              <Crown className="w-4 h-4 mr-2" />
               View Pricing
-            </LiquidButton>
+            </Button>
           </div>
         </GlassCard>
       </div>
@@ -209,14 +204,14 @@ export default function FeaturesPage() {
               </div>
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
               Powerful{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 Features
               </span>
             </h1>
             
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Discover everything VintageVision offers to help you identify, value, and style 
               vintage treasures with the power of artificial intelligence.
             </p>
@@ -234,8 +229,8 @@ export default function FeaturesPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Core Features</h2>
-            <p className="text-xl text-gray-600">The foundation of VintageVision's powerful AI platform</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Core Features</h2>
+            <p className="text-xl text-muted-foreground">The foundation of VintageVision's powerful AI platform</p>
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-8">
@@ -247,28 +242,26 @@ export default function FeaturesPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <SpotlightEffect>
-                  <GlassCard className="p-8 h-full" hover gradient="default">
+                <GlassCard className="p-8 h-full" hover="scale">
                     <div className="flex items-start gap-6 mb-6">
                       <div className={`w-16 h-16 bg-gradient-to-r ${feature.gradient} rounded-2xl flex items-center justify-center flex-shrink-0`}>
                         <feature.icon className="w-8 h-8 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-2xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                        <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+                        <h3 className="text-2xl font-bold text-foreground mb-3">{feature.title}</h3>
+                        <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
                       </div>
                     </div>
                     
                     <ul className="space-y-3">
                       {feature.features.map((item, itemIndex) => (
                         <li key={itemIndex} className="flex items-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
-                          <span className="text-gray-700">{item}</span>
+                          <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                          <span className="text-foreground">{item}</span>
                         </li>
                       ))}
                     </ul>
                   </GlassCard>
-                </SpotlightEffect>
               </motion.div>
             ))}
           </div>
@@ -285,8 +278,8 @@ export default function FeaturesPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Premium Features</h2>
-            <p className="text-xl text-gray-600">Advanced tools for serious collectors and professionals</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Premium Features</h2>
+            <p className="text-xl text-muted-foreground">Advanced tools for serious collectors and professionals</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -298,16 +291,16 @@ export default function FeaturesPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-6 h-full text-center" hover gradient="warm">
+                <GlassCard className="p-6 h-full text-center" hover="scale" variant="brass">
                   <div className="w-12 h-12 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{feature.description}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-3">{feature.title}</h3>
+                  <p className="text-muted-foreground text-sm mb-4">{feature.description}</p>
                   
                   <ul className="space-y-2">
                     {feature.features.map((item, itemIndex) => (
-                      <li key={itemIndex} className="text-xs text-gray-500 flex items-center justify-center gap-2">
+                      <li key={itemIndex} className="text-xs text-muted-foreground flex items-center justify-center gap-2">
                         <div className="w-1 h-1 bg-amber-500 rounded-full" />
                         {item}
                       </li>
@@ -330,8 +323,8 @@ export default function FeaturesPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Technical Excellence</h2>
-            <p className="text-xl text-gray-600">Built with cutting-edge technology for the best user experience</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Technical Excellence</h2>
+            <p className="text-xl text-muted-foreground">Built with cutting-edge technology for the best user experience</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -343,13 +336,13 @@ export default function FeaturesPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-6 h-full" hover gradient="cool">
+                <GlassCard className="p-6 h-full" hover="scale">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-4">
                     <feature.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
-                  <p className="text-blue-600 font-medium text-sm mb-3">{feature.description}</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{feature.details}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-2">{feature.title}</h3>
+                  <p className="text-info font-medium text-sm mb-3">{feature.description}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{feature.details}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -367,8 +360,8 @@ export default function FeaturesPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Perfect For</h2>
-            <p className="text-xl text-gray-600">See how VintageVision fits into your vintage journey</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Perfect For</h2>
+            <p className="text-xl text-muted-foreground">See how VintageVision fits into your vintage journey</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -380,10 +373,10 @@ export default function FeaturesPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-6 text-center h-full" hover>
+                <GlassCard className="p-6 text-center h-full" hover="scale">
                   <div className="text-4xl mb-4">{useCase.icon}</div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-3">{useCase.title}</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">{useCase.description}</p>
+                  <h3 className="text-lg font-bold text-foreground mb-3">{useCase.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{useCase.description}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -394,38 +387,38 @@ export default function FeaturesPage() {
       {/* CTA Section */}
       <div className="relative z-10 py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <GlassCard className="p-12" gradient="warm">
+          <GlassCard className="p-12" variant="brass">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                 Ready to Experience These Features?
               </h2>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-xl text-muted-foreground mb-8">
                 Start your vintage journey today and discover the stories behind your treasures.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <LiquidButton
+                <Button
                   onClick={() => navigate('/')}
-                  variant="primary"
+                  variant="brass"
                   size="lg"
                 >
-                  <Camera className="w-5 h-5" />
+                  <Camera className="w-5 h-5 mr-2" />
                   Try for Free
-                </LiquidButton>
-                
-                <MagneticButton
+                </Button>
+
+                <Button
                   onClick={() => navigate('/pricing')}
-                  variant="glass"
+                  variant="outline"
                   size="lg"
                 >
-                  <Crown className="w-5 h-5" />
+                  <Crown className="w-5 h-5 mr-2" />
                   View Plans
-                </MagneticButton>
+                </Button>
               </div>
             </motion.div>
           </GlassCard>

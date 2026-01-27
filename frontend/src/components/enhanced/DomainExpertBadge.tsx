@@ -143,7 +143,7 @@ export default function DomainExpertBadge({
       animate={{ opacity: 1, scale: 1 }}
       whileHover={{ scale: 1.05 }}
       className={cn(
-        'inline-flex items-center rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm',
+        'inline-flex items-center rounded-full bg-white/80 backdrop-blur-sm border border-border shadow-sm',
         sizes.container
       )}
       title={config.description}
@@ -156,7 +156,7 @@ export default function DomainExpertBadge({
         <Icon className={cn('text-white', sizes.icon)} />
       </div>
       {showLabel && (
-        <span className="font-medium text-gray-700">
+        <span className="font-medium text-muted-foreground">
           {getDomainExpertName(expert)}
         </span>
       )}
@@ -175,7 +175,7 @@ export function DomainExpertCard({ expert }: { expert: DomainExpert | null }) {
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-gray-200 shadow-sm"
+      className="bg-white/80 backdrop-blur-sm rounded-2xl p-4 border border-border shadow-sm"
     >
       <div className="flex items-center gap-4">
         <div className={cn(
@@ -185,9 +185,9 @@ export function DomainExpertCard({ expert }: { expert: DomainExpert | null }) {
           <Icon className="w-7 h-7 text-white" />
         </div>
         <div>
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Analyzed by</p>
-          <p className="font-bold text-gray-900">{getDomainExpertName(expert)}</p>
-          <p className="text-xs text-gray-500 mt-1">{config.description}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wide">Analyzed by</p>
+          <p className="font-bold text-foreground">{getDomainExpertName(expert)}</p>
+          <p className="text-xs text-muted-foreground mt-1">{config.description}</p>
         </div>
       </div>
     </motion.div>

@@ -23,14 +23,14 @@ export default function AuthCallbackPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-yellow-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+      <div className="bg-card rounded-xl shadow-lg p-8 text-center">
         <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
           <div className="w-8 h-8 border-3 border-white border-t-transparent rounded-full animate-spin"></div>
         </div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-xl font-semibold text-foreground mb-2">
           Completing Sign In...
         </h2>
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           Please wait while we set up your account
         </p>
       </div>

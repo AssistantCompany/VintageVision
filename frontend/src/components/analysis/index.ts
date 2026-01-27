@@ -1,0 +1,5 @@
+export { default as OverviewTab } from './OverviewTab'
+export { default as EvidenceTab } from './EvidenceTab'
+export { default as ValueTab } from './ValueTab'
+export { default as StyleTab } from './StyleTab'
+export { default as VeraTab } from './VeraTab'

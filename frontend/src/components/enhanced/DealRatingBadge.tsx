@@ -119,17 +119,17 @@ export default function DealRatingBadge({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-gray-200/50 shadow-sm"
+          className="bg-white/80 backdrop-blur-sm rounded-2xl p-5 border border-border/50 shadow-sm"
         >
           {/* Price Comparison */}
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="text-center p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Asking Price</p>
-              <p className="text-xl font-bold text-gray-900">{formatPrice(askingPrice)}</p>
+            <div className="text-center p-3 bg-muted/50 rounded-xl">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Asking Price</p>
+              <p className="text-xl font-bold text-foreground">{formatPrice(askingPrice)}</p>
             </div>
-            <div className="text-center p-3 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Market Value</p>
-              <p className="text-xl font-bold text-gray-900">
+            <div className="text-center p-3 bg-muted/50 rounded-xl">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Market Value</p>
+              <p className="text-xl font-bold text-foreground">
                 {estimatedMin && estimatedMax
                   ? `${formatPrice(estimatedMin)} - ${formatPrice(estimatedMax)}`
                   : formatPrice(estimatedMin || estimatedMax)}
@@ -156,7 +156,7 @@ export default function DealRatingBadge({
                       ? 'text-amber-600'
                       : 'text-red-600'
                 )} />
-                <span className="font-semibold text-gray-900">Profit Potential</span>
+                <span className="font-semibold text-foreground">Profit Potential</span>
               </div>
               <p className={cn(
                 'text-2xl font-bold',
@@ -179,8 +179,8 @@ export default function DealRatingBadge({
           {/* Explanation */}
           {explanation && (
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-gray-600 leading-relaxed">{explanation}</p>
+              <AlertTriangle className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-muted-foreground leading-relaxed">{explanation}</p>
             </div>
           )}
         </motion.div>

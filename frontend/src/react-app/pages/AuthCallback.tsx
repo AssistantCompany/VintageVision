@@ -48,30 +48,30 @@ export default function AuthCallbackPage() {
         {status === 'loading' && (
           <>
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-amber-600 mx-auto mb-4"></div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+            <h2 className="text-2xl font-semibold text-foreground mb-2">
               Completing sign in...
             </h2>
-            <p className="text-gray-600">Please wait a moment</p>
+            <p className="text-muted-foreground">Please wait a moment</p>
           </>
         )}
 
         {status === 'success' && (
           <>
             <div className="text-6xl mb-4">✅</div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+            <h2 className="text-2xl font-semibold text-foreground mb-2">
               Sign in successful!
             </h2>
-            <p className="text-gray-600">Redirecting...</p>
+            <p className="text-muted-foreground">Redirecting...</p>
           </>
         )}
 
         {status === 'error' && (
           <>
             <div className="text-6xl mb-4">❌</div>
-            <h2 className="text-2xl font-semibold text-gray-800 mb-2">
+            <h2 className="text-2xl font-semibold text-foreground mb-2">
               Sign in failed
             </h2>
-            <p className="text-gray-600">Redirecting back...</p>
+            <p className="text-muted-foreground">Redirecting back...</p>
           </>
         )}
       </div>

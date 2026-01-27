@@ -14,11 +14,8 @@ import {
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import PremiumHeader from '@/components/enhanced/PremiumHeader'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import SpotlightEffect from '@/components/ui/SpotlightEffect'
-import FloatingParticles from '@/components/ui/FloatingParticles'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
 import { cn, formatCurrency, formatRelativeTime, trackEvent } from '@/lib/utils'
 
@@ -185,19 +182,11 @@ export default function PremiumWishlistPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Background */}
-      <div className="fixed inset-0 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
-        <FloatingParticles 
-          count={60} 
-          className="opacity-20"
-          colors={['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b']}
-        />
-      </div>
+    <div className="min-h-screen bg-background">
 
       <PremiumHeader />
 
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-28 md:pb-8">
         {/* Header */}
         <motion.div
           className="mb-8"
@@ -205,19 +194,19 @@ export default function PremiumWishlistPage() {
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-4 mb-6">
-            <MagneticButton
+            <Button
               onClick={() => navigate('/')}
-              variant="glass"
+              variant="outline"
               size="sm"
             >
               <ArrowLeft className="w-4 h-4" />
-            </MagneticButton>
+            </Button>
             
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground">
                 My Wishlist
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-muted-foreground mt-1">
                 {wishlistItems.length} searches • {activeItems} active • {totalMatches} matches found
               </p>
             </div>
@@ -237,38 +226,38 @@ export default function PremiumWishlistPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
               >
-                <GlassCard className="p-4 text-center" hover>
-                  <stat.icon className="w-6 h-6 text-indigo-600 mx-auto mb-2" />
-                  <div className="text-lg font-bold text-gray-900">{stat.value}</div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
+                <GlassCard className="p-4 text-center" hover="scale">
+                  <stat.icon className="w-6 h-6 text-primary mx-auto mb-2" />
+                  <div className="text-lg font-bold text-foreground">{stat.value}</div>
+                  <div className="text-sm text-muted-foreground">{stat.label}</div>
                 </GlassCard>
               </motion.div>
             ))}
           </div>
 
           {/* Controls */}
-          <GlassCard className="p-6" gradient="default">
+          <GlassCard className="p-6">
             <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
               {/* Search */}
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Search wishlist..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 />
               </div>
 
-              <LiquidButton
+              <Button
                 onClick={() => setShowAddForm(true)}
-                variant="primary"
-                size="md"
+                variant="brass"
+                size="default"
               >
                 <Plus className="w-4 h-4" />
                 Add Search
-              </LiquidButton>
+              </Button>
             </div>
           </GlassCard>
         </motion.div>
@@ -290,12 +279,12 @@ export default function PremiumWishlistPage() {
                 exit={{ opacity: 0, scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <GlassCard className="p-6" gradient="warm">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6">Add to Wishlist</h3>
+                <GlassCard className="p-6" variant="brass">
+                  <h3 className="text-xl font-bold text-foreground mb-6">Add to Wishlist</h3>
                   
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">
                         Search Keywords *
                       </label>
                       <input
@@ -303,87 +292,87 @@ export default function PremiumWishlistPage() {
                         value={newItem.keywords}
                         onChange={(e) => setNewItem(prev => ({ ...prev, keywords: e.target.value }))}
                         placeholder="e.g., vintage lamp, mid-century chair"
-                        className="w-full px-3 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Style</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Style</label>
                         <input
                           type="text"
                           value={newItem.style}
                           onChange={(e) => setNewItem(prev => ({ ...prev, style: e.target.value }))}
                           placeholder="e.g., Art Deco"
-                          className="w-full px-3 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Era</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Era</label>
                         <input
                           type="text"
                           value={newItem.era}
                           onChange={(e) => setNewItem(prev => ({ ...prev, era: e.target.value }))}
                           placeholder="e.g., 1950s"
-                          className="w-full px-3 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Min Price</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Min Price</label>
                         <input
                           type="number"
                           value={newItem.priceMin}
                           onChange={(e) => setNewItem(prev => ({ ...prev, priceMin: e.target.value }))}
                           placeholder="100"
-                          className="w-full px-3 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         />
                       </div>
                       
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Max Price</label>
+                        <label className="block text-sm font-medium text-muted-foreground mb-2">Max Price</label>
                         <input
                           type="number"
                           value={newItem.priceMax}
                           onChange={(e) => setNewItem(prev => ({ ...prev, priceMax: e.target.value }))}
                           placeholder="500"
-                          className="w-full px-3 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                          className="w-full px-3 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">Notes</label>
                       <textarea
                         value={newItem.notes}
                         onChange={(e) => setNewItem(prev => ({ ...prev, notes: e.target.value }))}
                         placeholder="Any additional details..."
                         rows={3}
-                        className="w-full px-3 py-2 bg-white/50 border border-gray-200/50 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
                       />
                     </div>
                   </div>
 
                   <div className="flex gap-3 mt-6">
-                    <LiquidButton
+                    <Button
                       onClick={handleAddWishlistItem}
-                      variant="primary"
-                      size="md"
+                      variant="brass"
+                      size="default"
                       className="flex-1"
                     >
                       Add to Wishlist
-                    </LiquidButton>
-                    
-                    <MagneticButton
+                    </Button>
+
+                    <Button
                       onClick={() => setShowAddForm(false)}
-                      variant="ghost"
-                      size="md"
+                      variant="outline"
+                      size="default"
                     >
                       Cancel
-                    </MagneticButton>
+                    </Button>
                   </div>
                 </GlassCard>
               </motion.div>
@@ -401,8 +390,8 @@ export default function PremiumWishlistPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              <div className="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto mb-4" />
-              <p className="text-gray-600">Loading your wishlist...</p>
+              <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading your wishlist...</p>
             </motion.div>
           ) : filteredItems.length === 0 ? (
             <motion.div
@@ -412,30 +401,28 @@ export default function PremiumWishlistPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <SpotlightEffect>
-                <GlassCard className="p-12 max-w-md mx-auto" gradient="warm">
-                  <Star className="w-16 h-16 text-indigo-400 mx-auto mb-6" />
-                  <h3 className="text-xl font-bold text-gray-900 mb-4">
-                    {searchQuery ? 'No matching searches' : 'Create Your First Search'}
-                  </h3>
-                  <p className="text-gray-600 mb-6">
-                    {searchQuery 
-                      ? 'Try a different search term to find your wishlist items.'
-                      : 'Set up searches for vintage items you want to find, and we\'ll notify you when matches appear on marketplaces.'
-                    }
-                  </p>
-                  {!searchQuery && (
-                    <LiquidButton
-                      onClick={() => setShowAddForm(true)}
-                      variant="primary"
-                      size="md"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add First Search
-                    </LiquidButton>
-                  )}
-                </GlassCard>
-              </SpotlightEffect>
+              <GlassCard className="p-12 max-w-md mx-auto" variant="brass">
+                <Star className="w-16 h-16 text-primary/60 mx-auto mb-6" />
+                <h3 className="text-xl font-bold text-foreground mb-4">
+                  {searchQuery ? 'No matching searches' : 'Create Your First Search'}
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchQuery
+                    ? 'Try a different search term to find your wishlist items.'
+                    : 'Set up searches for vintage items you want to find, and we\'ll notify you when matches appear on marketplaces.'
+                  }
+                </p>
+                {!searchQuery && (
+                  <Button
+                    onClick={() => setShowAddForm(true)}
+                    variant="brass"
+                    size="default"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add First Search
+                  </Button>
+                )}
+              </GlassCard>
             </motion.div>
           ) : (
             <motion.div
@@ -452,80 +439,79 @@ export default function PremiumWishlistPage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <SpotlightEffect>
-                    <GlassCard className="overflow-hidden" hover>
+                  <GlassCard className="overflow-hidden" hover="scale">
                       <div className="p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
-                            <h3 className="font-bold text-gray-900 text-lg mb-2">
+                            <h3 className="font-bold text-foreground text-lg mb-2">
                               {item.search_criteria.keywords?.join(', ') || 'Search Query'}
                             </h3>
                             
                             <div className="flex flex-wrap gap-2 mb-3">
                               {item.search_criteria.style && (
-                                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                                <span className="px-2 py-1 bg-primary/20 text-primary rounded-full text-xs font-medium">
                                   {item.search_criteria.style}
                                 </span>
                               )}
                               {item.search_criteria.era && (
-                                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                                <span className="px-2 py-1 bg-info-muted text-info rounded-full text-xs font-medium">
                                   {item.search_criteria.era}
                                 </span>
                               )}
                               {item.search_criteria.priceRange && (
-                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium">
+                                <span className="px-2 py-1 bg-success-muted text-success rounded-full text-xs font-medium">
                                   {formatCurrency(item.search_criteria.priceRange.min)} - {formatCurrency(item.search_criteria.priceRange.max)}
                                 </span>
                               )}
                               <span className={cn(
                                 'px-2 py-1 rounded-full text-xs font-medium',
-                                item.is_active 
-                                  ? 'bg-green-100 text-green-700'
-                                  : 'bg-gray-100 text-gray-700'
+                                item.is_active
+                                  ? 'bg-success-muted text-success'
+                                  : 'bg-muted text-muted-foreground'
                               )}>
                                 {item.is_active ? 'Active' : 'Paused'}
                               </span>
                             </div>
 
                             {item.notes && (
-                              <p className="text-gray-600 text-sm mb-3 italic">"{item.notes}"</p>
+                              <p className="text-muted-foreground text-sm mb-3 italic">"{item.notes}"</p>
                             )}
 
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               Created {formatRelativeTime(item.created_at)} • 
                               {item.matches?.length || 0} matches found
                             </div>
                           </div>
 
                           <div className="flex items-center gap-2 ml-4">
-                            <MagneticButton
+                            <Button
                               onClick={() => handleToggleActive(item.id, item.is_active)}
-                              variant="glass"
+                              variant="outline"
                               size="sm"
                             >
                               {item.is_active ? <BellOff className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
-                            </MagneticButton>
-                            
-                            <MagneticButton
+                            </Button>
+
+                            <Button
                               onClick={() => handleDeleteItem(item.id)}
-                              variant="glass"
+                              variant="outline"
                               size="sm"
                             >
                               <Trash2 className="w-4 h-4" />
-                            </MagneticButton>
+                            </Button>
                           </div>
                         </div>
 
                         {/* Matches */}
                         {item.matches && item.matches.length > 0 && (
-                          <div className="border-t border-gray-200/50 pt-4">
-                            <h4 className="font-semibold text-gray-900 mb-3">
+                          <div className="border-t border-border pt-4">
+                            <h4 className="font-semibold text-foreground mb-3">
                               Recent Matches ({item.matches.length})
                             </h4>
                             
                             <div className="grid gap-3">
                               {item.matches.slice(0, 3).map((match) => (
-                                <div key={match.id} className="flex items-center gap-4 p-3 bg-white/30 rounded-xl">
+                                <div key={match.id} className="flex items-center gap-4 p-3 bg-muted/30 rounded-xl">
                                   {match.image_url && (
                                     <img 
                                       src={match.image_url} 
@@ -535,9 +521,9 @@ export default function PremiumWishlistPage() {
                                   )}
                                   
                                   <div className="flex-1">
-                                    <h5 className="font-medium text-gray-900 mb-1">{match.title}</h5>
-                                    <div className="flex items-center gap-3 text-sm text-gray-600">
-                                      <span className="font-semibold text-green-600">
+                                    <h5 className="font-medium text-foreground mb-1">{match.title}</h5>
+                                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                      <span className="font-semibold text-success">
                                         {formatCurrency(match.price)}
                                       </span>
                                       <span>{match.marketplace_name}</span>
@@ -545,19 +531,19 @@ export default function PremiumWishlistPage() {
                                     </div>
                                   </div>
                                   
-                                  <MagneticButton
+                                  <Button
                                     onClick={() => window.open(match.link_url, '_blank')}
-                                    variant="primary"
+                                    variant="brass"
                                     size="sm"
                                   >
                                     <ExternalLink className="w-4 h-4" />
-                                  </MagneticButton>
+                                  </Button>
                                 </div>
                               ))}
                               
                               {item.matches.length > 3 && (
                                 <div className="text-center">
-                                  <button className="text-indigo-600 hover:text-indigo-700 text-sm font-medium">
+                                  <button className="text-primary hover:text-primary text-sm font-medium">
                                     View all {item.matches.length} matches →
                                   </button>
                                 </div>
@@ -567,7 +553,6 @@ export default function PremiumWishlistPage() {
                         )}
                       </div>
                     </GlassCard>
-                  </SpotlightEffect>
                 </motion.div>
               ))}
             </motion.div>

@@ -531,30 +531,30 @@ export interface ApiResponse<T = unknown> {
 export function getDealRatingColor(rating: DealRating | null): string {
   switch (rating) {
     case 'exceptional':
-      return 'text-green-600 bg-green-100';
+      return 'text-success bg-success-muted';
     case 'good':
-      return 'text-blue-600 bg-blue-100';
+      return 'text-info bg-info-muted';
     case 'fair':
-      return 'text-yellow-600 bg-yellow-100';
+      return 'text-warning bg-warning-muted';
     case 'overpriced':
-      return 'text-red-600 bg-red-100';
+      return 'text-danger bg-danger-muted';
     default:
-      return 'text-gray-600 bg-gray-100';
+      return 'text-muted-foreground bg-muted';
   }
 }
 
 export function getFlipDifficultyColor(difficulty: FlipDifficulty | null): string {
   switch (difficulty) {
     case 'easy':
-      return 'text-green-600';
+      return 'text-success';
     case 'moderate':
-      return 'text-yellow-600';
+      return 'text-warning';
     case 'hard':
-      return 'text-orange-600';
+      return 'text-warning';
     case 'very_hard':
-      return 'text-red-600';
+      return 'text-danger';
     default:
-      return 'text-gray-600';
+      return 'text-muted-foreground';
   }
 }
 
@@ -609,15 +609,15 @@ export function humanizePrice(price: number): number {
 export function getAuthenticityRiskColor(risk: AuthenticityRisk | null): string {
   switch (risk) {
     case 'low':
-      return 'text-green-600 bg-green-100 border-green-200';
+      return 'text-success bg-success-muted border-success-muted';
     case 'medium':
-      return 'text-yellow-600 bg-yellow-100 border-yellow-200';
+      return 'text-warning bg-warning-muted border-warning-muted';
     case 'high':
-      return 'text-orange-600 bg-orange-100 border-orange-200';
+      return 'text-warning bg-warning-muted border-warning-muted';
     case 'very_high':
-      return 'text-red-600 bg-red-100 border-red-200';
+      return 'text-danger bg-danger-muted border-danger-muted';
     default:
-      return 'text-gray-600 bg-gray-100 border-gray-200';
+      return 'text-muted-foreground bg-muted border-border';
   }
 }
 
@@ -639,26 +639,26 @@ export function getAuthenticityRiskLabel(risk: AuthenticityRisk | null): string 
 export function getCheckPriorityColor(priority: AuthCheckPriority): string {
   switch (priority) {
     case 'critical':
-      return 'text-red-600 bg-red-50';
+      return 'text-danger bg-danger-muted/50';
     case 'important':
-      return 'text-orange-600 bg-orange-50';
+      return 'text-warning bg-warning-muted/50';
     case 'helpful':
-      return 'text-blue-600 bg-blue-50';
+      return 'text-info bg-info-muted/50';
     default:
-      return 'text-gray-600 bg-gray-50';
+      return 'text-muted-foreground bg-muted/50';
   }
 }
 
 export function getPhotoPriorityColor(priority: PhotoRequestPriority): string {
   switch (priority) {
     case 'required':
-      return 'text-red-600 border-red-300 bg-red-50';
+      return 'text-danger border-danger-muted bg-danger-muted/50';
     case 'recommended':
-      return 'text-amber-600 border-amber-300 bg-amber-50';
+      return 'text-warning border-warning-muted bg-warning-muted/50';
     case 'optional':
-      return 'text-blue-600 border-blue-300 bg-blue-50';
+      return 'text-info border-info-muted bg-info-muted/50';
     default:
-      return 'text-gray-600 border-gray-300 bg-gray-50';
+      return 'text-muted-foreground border-border bg-muted/50';
   }
 }
 
@@ -675,25 +675,25 @@ export function formatConfidence(confidence: number | null): string {
 
 // NEW: Get knowledge completeness label
 export function getKnowledgeLabel(completeness: number): { label: string; color: string } {
-  if (completeness >= 0.9) return { label: 'High Certainty', color: 'text-green-600 bg-green-100' };
-  if (completeness >= 0.7) return { label: 'Good Understanding', color: 'text-blue-600 bg-blue-100' };
-  if (completeness >= 0.5) return { label: 'Partial Information', color: 'text-yellow-600 bg-yellow-100' };
-  return { label: 'Limited Data', color: 'text-orange-600 bg-orange-100' };
+  if (completeness >= 0.9) return { label: 'High Certainty', color: 'text-success bg-success-muted' };
+  if (completeness >= 0.7) return { label: 'Good Understanding', color: 'text-info bg-info-muted' };
+  if (completeness >= 0.5) return { label: 'Partial Information', color: 'text-warning bg-warning-muted' };
+  return { label: 'Limited Data', color: 'text-warning bg-warning-muted' };
 }
 
 // NEW: Get authentication verdict styling
 export function getAuthVerdictStyle(verdict: ItemAuthentication['overallVerdict']): { label: string; color: string; icon: string } {
   switch (verdict) {
     case 'likely_authentic':
-      return { label: 'Likely Authentic', color: 'text-green-700 bg-green-100 border-green-300', icon: '✓' };
+      return { label: 'Likely Authentic', color: 'text-success bg-success-muted border-success-muted', icon: '✓' };
     case 'likely_fake':
-      return { label: 'Likely Not Authentic', color: 'text-red-700 bg-red-100 border-red-300', icon: '✗' };
+      return { label: 'Likely Not Authentic', color: 'text-danger bg-danger-muted border-danger-muted', icon: '✗' };
     case 'inconclusive':
-      return { label: 'Inconclusive', color: 'text-yellow-700 bg-yellow-100 border-yellow-300', icon: '?' };
+      return { label: 'Inconclusive', color: 'text-warning bg-warning-muted border-warning-muted', icon: '?' };
     case 'needs_expert':
-      return { label: 'Expert Review Needed', color: 'text-purple-700 bg-purple-100 border-purple-300', icon: '!' };
+      return { label: 'Expert Review Needed', color: 'text-accent bg-accent/20 border-accent/50', icon: '!' };
     default:
-      return { label: 'Unknown', color: 'text-gray-700 bg-gray-100 border-gray-300', icon: '-' };
+      return { label: 'Unknown', color: 'text-muted-foreground bg-muted border-border', icon: '-' };
   }
 }
 
@@ -701,15 +701,15 @@ export function getAuthVerdictStyle(verdict: ItemAuthentication['overallVerdict'
 export function getFindingStatusColor(status: AuthenticationFinding['status']): string {
   switch (status) {
     case 'pass':
-      return 'text-green-600 bg-green-50 border-green-200';
+      return 'text-success bg-success-muted/50 border-success-muted';
     case 'fail':
-      return 'text-red-600 bg-red-50 border-red-200';
+      return 'text-danger bg-danger-muted/50 border-danger-muted';
     case 'inconclusive':
-      return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      return 'text-warning bg-warning-muted/50 border-warning-muted';
     case 'needs_verification':
-      return 'text-blue-600 bg-blue-50 border-blue-200';
+      return 'text-info bg-info-muted/50 border-info-muted';
     default:
-      return 'text-gray-600 bg-gray-50 border-gray-200';
+      return 'text-muted-foreground bg-muted/50 border-border';
   }
 }
 
@@ -717,15 +717,15 @@ export function getFindingStatusColor(status: AuthenticationFinding['status']): 
 export function getDemandLevelStyle(level: MarketIntelligence['demandLevel']): { label: string; color: string } {
   switch (level) {
     case 'hot':
-      return { label: '🔥 High Demand', color: 'text-red-600 bg-red-100' };
+      return { label: '🔥 High Demand', color: 'text-danger bg-danger-muted' };
     case 'steady':
-      return { label: '📈 Steady Market', color: 'text-green-600 bg-green-100' };
+      return { label: '📈 Steady Market', color: 'text-success bg-success-muted' };
     case 'slow':
-      return { label: '📉 Slow Market', color: 'text-yellow-600 bg-yellow-100' };
+      return { label: '📉 Slow Market', color: 'text-warning bg-warning-muted' };
     case 'cold':
-      return { label: '❄️ Low Demand', color: 'text-blue-600 bg-blue-100' };
+      return { label: '❄️ Low Demand', color: 'text-info bg-info-muted' };
     default:
-      return { label: 'Unknown', color: 'text-gray-600 bg-gray-100' };
+      return { label: 'Unknown', color: 'text-muted-foreground bg-muted' };
   }
 }
 

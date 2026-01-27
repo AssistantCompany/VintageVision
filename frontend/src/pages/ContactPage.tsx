@@ -15,10 +15,8 @@ import {
   Sparkles,
   CheckCircle
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
-import AnimatedBackground from '@/components/ui/AnimatedBackground'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import { useNotifications } from '@/components/enhanced/NotificationSystem'
 import { cn } from '@/lib/utils'
 
@@ -137,10 +135,9 @@ export default function ContactPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <AnimatedBackground variant="cool" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="relative z-10 px-4 max-w-lg mx-auto text-center">
-          <GlassCard className="p-12" gradient="warm">
+          <GlassCard className="p-12" variant="brass">
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -149,31 +146,31 @@ export default function ContactPage() {
               <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-10 h-10 text-white" />
               </div>
-              
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">Thank You!</h1>
-              <p className="text-gray-600 mb-8">
+
+              <h1 className="text-3xl font-bold text-foreground mb-4">Thank You!</h1>
+              <p className="text-muted-foreground mb-8">
                 Your message has been sent successfully. Our team will get back to you within 24 hours.
               </p>
-              
+
               <div className="space-y-4">
-                <LiquidButton
+                <Button
                   onClick={() => navigate('/')}
-                  variant="primary"
+                  variant="brass"
                   size="lg"
                   className="w-full"
                 >
-                  <Sparkles className="w-5 h-5" />
+                  <Sparkles className="w-5 h-5 mr-2" />
                   Return to App
-                </LiquidButton>
-                
-                <MagneticButton
+                </Button>
+
+                <Button
                   onClick={() => setIsSubmitted(false)}
-                  variant="ghost"
-                  size="md"
+                  variant="outline"
+                  size="default"
                   className="w-full"
                 >
                   Send Another Message
-                </MagneticButton>
+                </Button>
               </div>
             </motion.div>
           </GlassCard>
@@ -183,20 +180,18 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="min-h-screen pb-28 md:pb-8">
-      <AnimatedBackground variant="cool" />
-
+    <div className="min-h-screen pb-28 md:pb-8 bg-background">
       {/* Header */}
       <div className="relative z-10 p-4">
-        <GlassCard className="p-4" blur="lg">
-          <MagneticButton
+        <GlassCard className="p-4">
+          <Button
             onClick={() => navigate('/')}
-            variant="ghost"
-            size="md"
+            variant="outline"
+            size="default"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Home
-          </MagneticButton>
+          </Button>
         </GlassCard>
       </div>
 
@@ -214,14 +209,14 @@ export default function ContactPage() {
               </div>
             </div>
             
-            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
               Get in{' '}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Touch
               </span>
             </h1>
             
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
               Have questions about VintageVision? Want to partner with us? We'd love to hear from you!
             </p>
           </motion.div>
@@ -238,8 +233,8 @@ export default function ContactPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">How to Reach Us</h2>
-            <p className="text-xl text-gray-600">Choose the method that works best for you</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">How to Reach Us</h2>
+            <p className="text-xl text-muted-foreground">Choose the method that works best for you</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -251,14 +246,14 @@ export default function ContactPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-6 text-center h-full" hover>
+                <GlassCard className="p-6 text-center h-full" hover="scale">
                   <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center mx-auto mb-4">
                     <method.icon className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-2">{method.title}</h3>
-                  <p className="text-gray-600 text-sm mb-3">{method.description}</p>
-                  <p className="text-blue-600 font-medium mb-2">{method.contact}</p>
-                  <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
+                  <h3 className="text-lg font-bold text-foreground mb-2">{method.title}</h3>
+                  <p className="text-muted-foreground text-sm mb-3">{method.description}</p>
+                  <p className="text-info font-medium mb-2">{method.contact}</p>
+                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
                     <Clock className="w-3 h-3" />
                     <span>{method.availability}</span>
                   </div>
@@ -279,15 +274,15 @@ export default function ContactPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Send Us a Message</h2>
-            <p className="text-xl text-gray-600">Fill out the form below and we'll get back to you soon</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Send Us a Message</h2>
+            <p className="text-xl text-muted-foreground">Fill out the form below and we'll get back to you soon</p>
           </motion.div>
 
-          <GlassCard className="p-8 md:p-12" gradient="default">
+          <GlassCard className="p-8 md:p-12">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Category Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-muted-foreground mb-3">
                   What can we help you with?
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -299,8 +294,8 @@ export default function ContactPage() {
                       className={cn(
                         'p-4 rounded-xl border-2 transition-all duration-300 text-center',
                         form.category === category.id
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                          ? 'border-info bg-info-muted text-info'
+                          : 'border-border hover:border-muted-foreground text-muted-foreground'
                       )}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -315,7 +310,7 @@ export default function ContactPage() {
               {/* Name and Email */}
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Full Name *
                   </label>
                   <input
@@ -323,13 +318,13 @@ export default function ContactPage() {
                     required
                     value={form.name}
                     onChange={(e) => handleInputChange('name', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:ring-2 focus:ring-info focus:border-transparent transition-all duration-300"
                     placeholder="Your full name"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">
                     Email Address *
                   </label>
                   <input
@@ -337,7 +332,7 @@ export default function ContactPage() {
                     required
                     value={form.email}
                     onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:ring-2 focus:ring-info focus:border-transparent transition-all duration-300"
                     placeholder="your@email.com"
                   />
                 </div>
@@ -345,7 +340,7 @@ export default function ContactPage() {
 
               {/* Subject */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Subject *
                 </label>
                 <input
@@ -353,14 +348,14 @@ export default function ContactPage() {
                   required
                   value={form.subject}
                   onChange={(e) => handleInputChange('subject', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:ring-2 focus:ring-info focus:border-transparent transition-all duration-300"
                   placeholder="Brief description of your inquiry"
                 />
               </div>
 
               {/* Message */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Message *
                 </label>
                 <textarea
@@ -368,7 +363,7 @@ export default function ContactPage() {
                   rows={6}
                   value={form.message}
                   onChange={(e) => handleInputChange('message', e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 resize-none"
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-card focus:ring-2 focus:ring-info focus:border-transparent transition-all duration-300 resize-none"
                   placeholder="Tell us more about your inquiry..."
                 />
               </div>
@@ -412,8 +407,8 @@ export default function ContactPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">Our Offices</h2>
-            <p className="text-xl text-gray-600">Visit us at one of our global locations</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Our Offices</h2>
+            <p className="text-xl text-muted-foreground">Visit us at one of our global locations</p>
           </motion.div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -425,13 +420,13 @@ export default function ContactPage() {
                 transition={{ duration: 0.6, delay: index * 0.1 }}
                 viewport={{ once: true }}
               >
-                <GlassCard className="p-6 h-full" hover>
+                <GlassCard className="p-6 h-full" hover="scale">
                   <div className={`w-12 h-12 bg-gradient-to-r ${office.gradient} rounded-xl flex items-center justify-center mb-4`}>
                     <MapPin className="w-6 h-6 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{office.city}</h3>
-                  <p className="text-blue-600 font-medium mb-3">{office.type}</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{office.address}</p>
+                  <h3 className="text-xl font-bold text-foreground mb-2">{office.city}</h3>
+                  <p className="text-info font-medium mb-3">{office.type}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{office.address}</p>
                 </GlassCard>
               </motion.div>
             ))}
@@ -442,38 +437,38 @@ export default function ContactPage() {
       {/* FAQ Quick Links */}
       <div className="relative z-10 py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <GlassCard className="p-12" gradient="warm">
+          <GlassCard className="p-12" variant="brass">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
                 Need Quick Answers?
               </h2>
-              <p className="text-xl text-gray-600 mb-8">
+              <p className="text-xl text-muted-foreground mb-8">
                 Check out our FAQ or browse our help center for instant answers to common questions.
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <LiquidButton
+                <Button
                   onClick={() => navigate('/help')}
-                  variant="primary"
+                  variant="brass"
                   size="lg"
                 >
-                  <HelpCircle className="w-5 h-5" />
+                  <HelpCircle className="w-5 h-5 mr-2" />
                   Help Center
-                </LiquidButton>
-                
-                <MagneticButton
+                </Button>
+
+                <Button
                   onClick={() => navigate('/faq')}
-                  variant="glass"
+                  variant="outline"
                   size="lg"
                 >
-                  <MessageSquare className="w-5 h-5" />
+                  <MessageSquare className="w-5 h-5 mr-2" />
                   View FAQ
-                </MagneticButton>
+                </Button>
               </div>
             </motion.div>
           </GlassCard>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, Send, X } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 
 interface ErrorReport {
   id: string
@@ -133,20 +133,20 @@ export function ErrorReportSystem({ onErrorReported }: ErrorReportSystemProps) {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 100 }}
           >
-            <GlassCard className="p-4 border-red-200" gradient="rose">
+            <GlassCard className="p-4 border-red-200">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-danger flex-shrink-0 mt-0.5" />
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-red-900 mb-1">Error Detected</h4>
-                  <p className="text-sm text-red-700 mb-3 break-words">
+                  <h4 className="font-semibold text-danger mb-1">Error Detected</h4>
+                  <p className="text-sm text-danger mb-3 break-words">
                     {showError.error}
                   </p>
                   
                   <div className="flex gap-2">
-                    <MagneticButton
+                    <Button
                       onClick={() => handleManualReport(showError)}
                       disabled={reporting}
-                      variant="primary"
+                      variant="brass"
                       size="sm"
                     >
                       {reporting ? (
@@ -160,21 +160,21 @@ export function ErrorReportSystem({ onErrorReported }: ErrorReportSystemProps) {
                           Report
                         </>
                       )}
-                    </MagneticButton>
+                    </Button>
                     
-                    <MagneticButton
+                    <Button
                       onClick={() => dismissError(showError.id)}
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
                     >
                       Dismiss
-                    </MagneticButton>
+                    </Button>
                   </div>
                 </div>
                 
                 <button
                   onClick={() => dismissError(showError.id)}
-                  className="text-red-400 hover:text-red-600"
+                  className="text-danger/70 hover:text-danger"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -182,10 +182,10 @@ export function ErrorReportSystem({ onErrorReported }: ErrorReportSystemProps) {
               
               {showError.stack && (
                 <details className="mt-3">
-                  <summary className="text-xs text-red-600 cursor-pointer">
+                  <summary className="text-xs text-danger cursor-pointer">
                     Stack Trace
                   </summary>
-                  <pre className="text-xs text-red-600 mt-2 p-2 bg-red-50 rounded overflow-auto max-h-32">
+                  <pre className="text-xs text-danger mt-2 p-2 bg-danger-muted rounded overflow-auto max-h-32">
                     {showError.stack}
                   </pre>
                 </details>
@@ -198,21 +198,21 @@ export function ErrorReportSystem({ onErrorReported }: ErrorReportSystemProps) {
       {/* Error List (Development Only) */}
       {process.env.NODE_ENV === 'development' && errors.length > 0 && (
         <div className="fixed top-4 left-4 z-[90] max-w-sm">
-          <GlassCard className="p-3" gradient="default">
+          <GlassCard className="p-3">
             <div className="flex items-center gap-2 mb-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span className="text-sm font-medium text-gray-900">
+              <AlertTriangle className="w-4 h-4 text-warning" />
+              <span className="text-sm font-medium text-foreground">
                 {errors.length} Error{errors.length !== 1 ? 's' : ''} Detected
               </span>
             </div>
             
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-muted-foreground">
               Check browser console for details
             </div>
             
             <button
               onClick={() => setErrors([])}
-              className="mt-2 text-xs text-gray-500 hover:text-gray-700 underline"
+              className="mt-2 text-xs text-muted-foreground hover:text-foreground underline"
             >
               Clear All
             </button>

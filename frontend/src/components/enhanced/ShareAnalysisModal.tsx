@@ -12,9 +12,8 @@ import {
   QrCode,
   ExternalLink
 } from 'lucide-react'
-import GlassCard from '@/components/ui/GlassCard'
-import MagneticButton from '@/components/ui/MagneticButton'
-import LiquidButton from '@/components/ui/LiquidButton'
+import { GlassCard } from '@/components/ui/glass-card'
+import { Button } from '@/components/ui/button'
 import { ItemAnalysis, formatPriceRange } from '@/types'
 import { cn, copyToClipboard, shareContent, isWebShareSupported, trackEvent } from '@/lib/utils'
 import { exportAnalysisToPDF, generateAnalysisSummary } from '@/utils/pdfExport'
@@ -170,7 +169,7 @@ export default function ShareAnalysisModal({
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             onClick={(e) => e.stopPropagation()}
           >
-            <GlassCard className="p-6" gradient="warm">
+            <GlassCard className="p-6" variant="brass">
               {/* Header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
@@ -178,13 +177,13 @@ export default function ShareAnalysisModal({
                     <Share2 className="w-5 h-5 text-amber-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-900">Share Analysis</h3>
-                    <p className="text-sm text-gray-500">{analysis.name}</p>
+                    <h3 className="text-lg font-bold text-foreground">Share Analysis</h3>
+                    <p className="text-sm text-muted-foreground">{analysis.name}</p>
                   </div>
                 </div>
                 <motion.button
                   onClick={onClose}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                 >
@@ -194,17 +193,17 @@ export default function ShareAnalysisModal({
 
               {/* Copy Link Section */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-muted-foreground mb-2">
                   Share Link
                 </label>
                 <div className="flex gap-2">
-                  <div className="flex-1 px-3 py-2 bg-white/50 border border-gray-300/50 rounded-xl text-sm text-gray-700 truncate">
+                  <div className="flex-1 px-3 py-2 bg-white/50 border border-gray-300/50 rounded-xl text-sm text-muted-foreground truncate">
                     {shareUrl}
                   </div>
-                  <MagneticButton
+                  <Button
                     onClick={handleCopyLink}
-                    variant={copied ? 'primary' : 'glass'}
-                    size="md"
+                    variant={copied ? 'brass' : 'outline'}
+                    size="default"
                     className={cn(
                       'transition-colors',
                       copied && 'bg-green-500 text-white'
@@ -215,67 +214,67 @@ export default function ShareAnalysisModal({
                     ) : (
                       <Copy className="w-5 h-5" />
                     )}
-                  </MagneticButton>
+                  </Button>
                 </div>
               </div>
 
               {/* Native Share Button (Mobile) */}
               {isWebShareSupported() && (
-                <LiquidButton
+                <Button
                   onClick={handleNativeShare}
-                  variant="primary"
-                  size="md"
+                  variant="brass"
+                  size="default"
                   className="w-full mb-4"
                 >
                   <Share2 className="w-5 h-5" />
                   <span>Share...</span>
-                </LiquidButton>
+                </Button>
               )}
 
               {/* Social Share Buttons */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-muted-foreground mb-3">
                   Share on Social Media
                 </label>
                 <div className="grid grid-cols-4 gap-3">
                   <motion.button
                     onClick={handleTwitterShare}
-                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-gray-50 transition-colors"
+                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-muted transition-colors"
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <TwitterIcon className="w-5 h-5" />
-                    <span className="text-xs text-gray-600">X</span>
+                    <span className="text-xs text-muted-foreground">X</span>
                   </motion.button>
 
                   <motion.button
                     onClick={handleFacebookShare}
-                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-blue-50 transition-colors"
+                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-blue-50 transition-colors"
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <FacebookIcon className="w-5 h-5 text-blue-600" />
-                    <span className="text-xs text-gray-600">Facebook</span>
+                    <span className="text-xs text-muted-foreground">Facebook</span>
                   </motion.button>
 
                   <motion.button
                     onClick={handlePinterestShare}
-                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-red-50 transition-colors"
+                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-red-50 transition-colors"
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                   >
                     <PinterestIcon className="w-5 h-5 text-red-600" />
-                    <span className="text-xs text-gray-600">Pinterest</span>
+                    <span className="text-xs text-muted-foreground">Pinterest</span>
                   </motion.button>
 
                   <motion.button
                     onClick={handleEmailShare}
-                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-gray-50 transition-colors"
+                    className="flex flex-col items-center gap-1 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-muted transition-colors"
                     whileHover={{ scale: 1.05, y: -2 }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    <Mail className="w-5 h-5 text-gray-600" />
-                    <span className="text-xs text-gray-600">Email</span>
+                    <Mail className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">Email</span>
                   </motion.button>
                 </div>
               </div>
@@ -284,39 +283,39 @@ export default function ShareAnalysisModal({
               <div className="space-y-2">
                 <motion.button
                   onClick={handleSMSShare}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-gray-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-muted transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
                   <MessageCircle className="w-5 h-5 text-green-600" />
-                  <span className="text-sm font-medium text-gray-700">Send via Text Message</span>
+                  <span className="text-sm font-medium text-muted-foreground">Send via Text Message</span>
                 </motion.button>
 
                 <motion.button
                   onClick={handleCopyFullSummary}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-gray-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-muted transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
                   <Link2 className="w-5 h-5 text-blue-600" />
-                  <span className="text-sm font-medium text-gray-700">Copy Full Summary</span>
+                  <span className="text-sm font-medium text-muted-foreground">Copy Full Summary</span>
                 </motion.button>
 
                 <motion.button
                   onClick={handlePDFExport}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-gray-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-muted transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
                   <FileText className="w-5 h-5 text-amber-600" />
-                  <span className="text-sm font-medium text-gray-700">Export as PDF</span>
-                  <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
+                  <span className="text-sm font-medium text-muted-foreground">Export as PDF</span>
+                  <ExternalLink className="w-4 h-4 text-muted-foreground ml-auto" />
                 </motion.button>
 
                 <motion.button
                   onClick={() => setShowQRCode(!showQRCode)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-gray-200/50 hover:bg-gray-50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/50 border border-border/50 hover:bg-muted transition-colors text-left"
                   whileHover={{ x: 4 }}
                 >
                   <QrCode className="w-5 h-5 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-muted-foreground">
                     {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
                   </span>
                 </motion.button>
@@ -331,7 +330,7 @@ export default function ShareAnalysisModal({
                     exit={{ opacity: 0, height: 0 }}
                     className="mt-4 overflow-hidden"
                   >
-                    <div className="flex flex-col items-center p-4 bg-white rounded-xl border border-gray-200">
+                    <div className="flex flex-col items-center p-4 bg-white rounded-xl border border-border">
                       {qrCodeUrl ? (
                         <img
                           src={qrCodeUrl}
@@ -339,11 +338,11 @@ export default function ShareAnalysisModal({
                           className="w-48 h-48"
                         />
                       ) : (
-                        <div className="w-48 h-48 bg-gray-100 rounded flex items-center justify-center">
-                          <span className="text-gray-400">Loading...</span>
+                        <div className="w-48 h-48 bg-muted rounded flex items-center justify-center">
+                          <span className="text-muted-foreground">Loading...</span>
                         </div>
                       )}
-                      <p className="mt-2 text-xs text-gray-500 text-center">
+                      <p className="mt-2 text-xs text-muted-foreground text-center">
                         Scan to view this analysis
                       </p>
                     </div>
