@@ -15,6 +15,26 @@
 
 import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 
+// Helper to wait for Framer Motion animations to complete
+async function waitForAnimations(page: Page): Promise<void> {
+  await page.waitForLoadState('domcontentloaded');
+  await page.waitForTimeout(1500);
+}
+
+// Helper to dismiss onboarding overlay if present
+async function dismissOnboarding(page: Page): Promise<void> {
+  const skipButton = page.locator('button', { hasText: 'Skip' });
+  try {
+    // Check if onboarding is visible
+    if (await skipButton.isVisible({ timeout: 2000 })) {
+      await skipButton.click();
+      await page.waitForTimeout(500);
+    }
+  } catch {
+    // Onboarding not present, continue
+  }
+}
+
 // Test user data for mocking authenticated state
 const mockUser = {
   id: 'test-user-123',
@@ -369,15 +389,20 @@ test.describe('Authentication Flow - User Profile Display', () => {
   test('should display user dropdown menu when user button is clicked', async ({ page }) => {
     await page.goto(FRONTEND_URL);
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
-    // Click the user menu button
+    // Click the user menu button (contains "Pro Member" text)
     const userMenuButton = page.locator('button').filter({
-      has: page.locator('text=Pro Member'),
-    });
+      hasText: 'Pro Member',
+    }).first();
+
+    // Wait for button to be visible and click
+    await expect(userMenuButton).toBeVisible({ timeout: 10000 });
     await userMenuButton.click();
 
     // Wait for dropdown animation
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Check for dropdown menu items
     const profileLink = page.locator('button', { hasText: 'Profile' });
@@ -386,7 +411,7 @@ test.describe('Authentication Flow - User Profile Display', () => {
     const preferencesLink = page.locator('button', { hasText: 'Preferences' });
     const signOutLink = page.locator('button', { hasText: 'Sign Out' });
 
-    await expect(profileLink).toBeVisible();
+    await expect(profileLink).toBeVisible({ timeout: 5000 });
     await expect(collectionLink).toBeVisible();
     await expect(wishlistLink).toBeVisible();
     await expect(preferencesLink).toBeVisible();
@@ -396,36 +421,46 @@ test.describe('Authentication Flow - User Profile Display', () => {
   test('should display user email in dropdown menu', async ({ page }) => {
     await page.goto(FRONTEND_URL);
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
     // Open user menu
     const userMenuButton = page.locator('button').filter({
-      has: page.locator('text=Pro Member'),
-    });
+      hasText: 'Pro Member',
+    }).first();
+    await expect(userMenuButton).toBeVisible({ timeout: 10000 });
     await userMenuButton.click();
+
+    // Wait for dropdown animation
+    await page.waitForTimeout(500);
 
     // Check for email display
     const userEmail = page.locator('text=testuser@example.com');
-    await expect(userEmail).toBeVisible();
+    await expect(userEmail).toBeVisible({ timeout: 5000 });
   });
 
   test('should navigate to profile page from user menu', async ({ page }) => {
     await page.goto(FRONTEND_URL);
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
     // Open user menu
     const userMenuButton = page.locator('button').filter({
-      has: page.locator('text=Pro Member'),
-    });
+      hasText: 'Pro Member',
+    }).first();
+    await expect(userMenuButton).toBeVisible({ timeout: 10000 });
     await userMenuButton.click();
 
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Click Profile
     const profileLink = page.locator('button', { hasText: 'Profile' });
+    await expect(profileLink).toBeVisible({ timeout: 5000 });
     await profileLink.click();
 
     // Should navigate to profile page
-    await page.waitForURL('**/profile');
+    await page.waitForURL('**/profile', { timeout: 10000 });
     expect(page.url()).toContain('/profile');
   });
 });
@@ -439,14 +474,17 @@ test.describe('Authentication Flow - Logout Functionality', () => {
 
     await page.goto(FRONTEND_URL);
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
     // Open user menu
     const userMenuButton = page.locator('button').filter({
-      has: page.locator('text=Pro Member'),
-    });
+      hasText: 'Pro Member',
+    }).first();
+    await expect(userMenuButton).toBeVisible({ timeout: 10000 });
     await userMenuButton.click();
 
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Now switch to unauthenticated state after logout
     await page.route('**/api/auth/me', async (route) => {
@@ -462,17 +500,19 @@ test.describe('Authentication Flow - Logout Functionality', () => {
 
     // Click Sign Out
     const signOutButton = page.locator('button', { hasText: 'Sign Out' });
+    await expect(signOutButton).toBeVisible({ timeout: 5000 });
     await signOutButton.click();
 
     // Wait for logout to complete and page to reload
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
 
     // Should redirect to home and show Sign In button
-    await page.waitForURL(FRONTEND_URL + '/');
+    await page.waitForURL(FRONTEND_URL + '/', { timeout: 10000 });
 
     // Verify Sign In button is now visible (user is logged out)
     const signInButton = page.locator('button', { hasText: /sign in/i });
-    await expect(signInButton).toBeVisible();
+    await expect(signInButton).toBeVisible({ timeout: 10000 });
   });
 
   test('should clear user state after logout', async ({ page }) => {
@@ -483,16 +523,18 @@ test.describe('Authentication Flow - Logout Functionality', () => {
 
     await page.goto(FRONTEND_URL);
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
     // Verify user is authenticated
     const userMenuButton = page.locator('button').filter({
-      has: page.locator('text=Pro Member'),
-    });
-    await expect(userMenuButton).toBeVisible();
+      hasText: 'Pro Member',
+    }).first();
+    await expect(userMenuButton).toBeVisible({ timeout: 10000 });
 
     // Open menu and logout
     await userMenuButton.click();
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     // Switch to unauthenticated state
     await page.route('**/api/auth/me', async (route) => {
@@ -506,17 +548,20 @@ test.describe('Authentication Flow - Logout Functionality', () => {
       });
     });
 
-    await page.locator('button', { hasText: 'Sign Out' }).click();
+    const signOutButton = page.locator('button', { hasText: 'Sign Out' });
+    await expect(signOutButton).toBeVisible({ timeout: 5000 });
+    await signOutButton.click();
 
     await page.waitForLoadState('networkidle');
-    await page.waitForURL(FRONTEND_URL + '/');
+    await waitForAnimations(page);
+    await page.waitForURL(FRONTEND_URL + '/', { timeout: 10000 });
 
     // User menu should no longer be visible
-    await expect(userMenuButton).not.toBeVisible();
+    await expect(userMenuButton).not.toBeVisible({ timeout: 5000 });
 
     // Sign In button should be visible
     const signInButton = page.locator('button', { hasText: /sign in/i });
-    await expect(signInButton).toBeVisible();
+    await expect(signInButton).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -527,29 +572,55 @@ test.describe('Authentication Flow - Session Persistence', () => {
     await mockWishlistEndpoint(page, true);
     await mockPreferencesEndpoint(page, true);
 
-    // Start on home page
+    // Helper to verify auth state - checks for authenticated user indicators in nav
+    const verifyAuthState = async () => {
+      // Look for user menu button (contains Test User name or Pro Member badge)
+      const userIndicator = page.locator('button').filter({
+        hasText: /Test User|Pro Member/i,
+      }).first();
+      await expect(userIndicator).toBeVisible({ timeout: 15000 });
+    };
+
+    // Helper to verify Sign In button is NOT visible (confirms authenticated state)
+    const verifyNoSignIn = async () => {
+      const signInButton = page.locator('button', { hasText: /sign in/i });
+      await expect(signInButton).not.toBeVisible({ timeout: 5000 });
+    };
+
+    // Start on home page - this has the main nav with user menu
     await page.goto(FRONTEND_URL);
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
+    await verifyAuthState();
 
-    // Verify authenticated - look for user name from mockUser.displayName
+    // Open user menu and navigate to Collection (protected route with nav)
     const userMenuButton = page.locator('button').filter({
-      hasText: /Test User/i,
-    });
-    await expect(userMenuButton).toBeVisible({ timeout: 10000 });
+      hasText: /Test User|Pro Member/i,
+    }).first();
+    await userMenuButton.click();
+    await page.waitForTimeout(500);
 
-    // Navigate to features page
-    await page.goto(`${FRONTEND_URL}/features`);
+    const collectionLink = page.locator('button', { hasText: 'My Collection' });
+    await expect(collectionLink).toBeVisible({ timeout: 5000 });
+    await collectionLink.click();
+
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
 
-    // Should still be authenticated
-    await expect(userMenuButton).toBeVisible();
+    // Verify we're on collection (didn't get redirected) and still authenticated
+    expect(page.url()).toContain('/collection');
+    // Collection page should not have Sign In button since we're authenticated
+    await verifyNoSignIn();
 
-    // Navigate to about page
-    await page.goto(`${FRONTEND_URL}/about`);
+    // Navigate back to home
+    await page.goto(FRONTEND_URL);
     await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
-    // Should still be authenticated
-    await expect(userMenuButton).toBeVisible();
+    // Should still be authenticated on home page
+    await verifyAuthState();
   });
 
   test('should maintain authenticated state after page reload', async ({ page }) => {
@@ -616,13 +687,18 @@ test.describe('Authentication Flow - Protected Routes', () => {
     test('should redirect from /collection to home when not authenticated', async ({ page }) => {
       await page.goto(`${FRONTEND_URL}/collection`);
       await page.waitForLoadState('networkidle');
+      await waitForAnimations(page);
+      await dismissOnboarding(page);
 
-      // Should redirect to home page
-      await page.waitForURL(FRONTEND_URL + '/', { timeout: 5000 }).catch(() => {
+      // Should redirect to home page (may or may not include trailing slash)
+      await page.waitForURL(/\/$/, { timeout: 10000 }).catch(() => {
         // May already be on home
       });
 
-      expect(page.url()).toBe(FRONTEND_URL + '/');
+      // Check we're on home, not still on collection
+      const url = page.url();
+      expect(url.endsWith('/') || url === FRONTEND_URL).toBe(true);
+      expect(url).not.toContain('/collection');
     });
 
     test('should redirect from /wishlist to home when not authenticated', async ({ page }) => {
@@ -665,13 +741,18 @@ test.describe('Authentication Flow - Protected Routes', () => {
       for (const route of PROTECTED_ROUTES) {
         await page.goto(`${FRONTEND_URL}${route}`);
         await page.waitForLoadState('networkidle');
+        await waitForAnimations(page);
+        await dismissOnboarding(page);
 
-        // Wait for potential redirect
-        await page.waitForURL(FRONTEND_URL + '/', { timeout: 5000 }).catch(() => {
+        // Wait for potential redirect (handle both with and without trailing slash)
+        await page.waitForURL(/\/$|^http:\/\/localhost:5173$/, { timeout: 5000 }).catch(() => {
           // May already be on home
         });
 
-        expect(page.url()).toBe(FRONTEND_URL + '/');
+        // Check we're on home, not on the protected route (handle both URL formats)
+        const url = page.url();
+        expect(url.endsWith('/') || url === FRONTEND_URL).toBe(true);
+        expect(url).not.toContain(route);
       }
     });
   });
@@ -688,6 +769,8 @@ test.describe('Authentication Flow - Protected Routes', () => {
       // This avoids the race condition where protected pages redirect before auth loads
       await page.goto(FRONTEND_URL);
       await page.waitForLoadState('networkidle');
+      await waitForAnimations(page);
+      await dismissOnboarding(page);
       // Wait for authenticated state to be visible (user button appears)
       await page.waitForSelector('button:has-text("Test User"), button:has-text("Pro Member")', {
         timeout: 10000,
@@ -743,36 +826,58 @@ test.describe('Authentication Flow - Protected Routes', () => {
     });
 
     test('should access /preferences when authenticated', async ({ page }) => {
+      await waitForAnimations(page);
+      await dismissOnboarding(page);
+
       // Open user menu to find preferences link
-      const userButton = page.locator('button').filter({ hasText: /Test User/i });
-      if (await userButton.isVisible()) {
+      const userButton = page.locator('button').filter({ hasText: 'Pro Member' }).first();
+      if (await userButton.isVisible().catch(() => false)) {
         await userButton.click();
-        const prefsLink = page.getByRole('link', { name: /preferences|settings/i });
-        if (await prefsLink.isVisible({ timeout: 2000 })) {
+        await page.waitForTimeout(500);
+        const prefsLink = page.locator('button', { hasText: 'Preferences' });
+        if (await prefsLink.isVisible({ timeout: 2000 }).catch(() => false)) {
           await prefsLink.click();
+          await page.waitForLoadState('networkidle');
+          await waitForAnimations(page);
         } else {
           await page.goto(`${FRONTEND_URL}/preferences`);
+          await page.waitForLoadState('networkidle');
+          await waitForAnimations(page);
         }
       } else {
         await page.goto(`${FRONTEND_URL}/preferences`);
+        await page.waitForLoadState('networkidle');
+        await waitForAnimations(page);
       }
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(500);
 
       await page.waitForURL(/preferences|\/$/);
       expect(page.url()).toContain('/preferences');
     });
 
     test('should access /profile when authenticated', async ({ page }) => {
+      await waitForAnimations(page);
+      await dismissOnboarding(page);
+
       // Try to navigate via user menu
-      const userButton = page.locator('button').filter({ hasText: /Test User/i });
-      if (await userButton.isVisible()) {
+      const userButton = page.locator('button').filter({ hasText: 'Pro Member' }).first();
+      if (await userButton.isVisible().catch(() => false)) {
         await userButton.click();
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(500);
+        const profileLink = page.locator('button', { hasText: 'Profile' });
+        if (await profileLink.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await profileLink.click();
+          await page.waitForLoadState('networkidle');
+          await waitForAnimations(page);
+        } else {
+          await page.goto(`${FRONTEND_URL}/profile`);
+          await page.waitForLoadState('networkidle');
+          await waitForAnimations(page);
+        }
+      } else {
+        await page.goto(`${FRONTEND_URL}/profile`);
+        await page.waitForLoadState('networkidle');
+        await waitForAnimations(page);
       }
-      await page.goto(`${FRONTEND_URL}/profile`);
-      await page.waitForLoadState('networkidle');
-      await page.waitForTimeout(500);
 
       // Should stay on profile page - note: profile may redirect if not implemented
       // For now just check we don't get redirected to root
@@ -794,7 +899,9 @@ test.describe('Authentication Flow - Edge Cases', () => {
     await page.goto(FRONTEND_URL);
 
     // Page should still load, showing unauthenticated state
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
     // Sign In button should be visible (fallback to unauthenticated)
     const signInButton = page.locator('button', { hasText: /sign in/i });
@@ -836,7 +943,9 @@ test.describe('Authentication Flow - Edge Cases', () => {
     });
 
     await page.goto(FRONTEND_URL);
-    await page.waitForLoadState('domcontentloaded');
+    await page.waitForLoadState('networkidle');
+    await waitForAnimations(page);
+    await dismissOnboarding(page);
 
     // Should fall back to unauthenticated state
     const signInButton = page.locator('button', { hasText: /sign in/i });

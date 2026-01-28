@@ -202,6 +202,7 @@ export default function SimpleImageUploader({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       className="max-w-3xl mx-auto"
+      data-testid="simple-uploader"
     >
       <GlassCard variant="brass" className="p-6 sm:p-12">
         <div className="text-center space-y-4 sm:space-y-6">
