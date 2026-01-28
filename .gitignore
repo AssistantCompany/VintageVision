@@ -26,6 +26,11 @@ Thumbs.db
 
 # Testing
 coverage/
+test-results/
+test-images/
+playwright-report/
+.playwright-mcp/
+backend/test-data/
 
 # Misc
 *.pem
